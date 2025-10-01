@@ -1,0 +1,3 @@
+[submodule "deps/ded_tasks"]
+	path = deps/ded_tasks
+	url = https://github.com/Waujito/ded_tasks.git
