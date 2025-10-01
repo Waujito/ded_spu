@@ -1,13 +1,10 @@
+#include <string.h>
+#include <stdlib.h>
+
 #include "types.h"
+#include "spu.h"
 
-void welcome_message(void) {
-	printf("SPU - Executes your sussy code\n");
-}
-
-int main(int argc, const char *argv[]) {
-	welcome_message();
-
-
-
+int main() {
+	printf("fuck \n");
 	return 0;
 }

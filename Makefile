@@ -33,7 +33,7 @@ TESTSRC := test/test_pvector.cpp test/test_cppvector.cpp test/test_crc32.cpp
 TESTOBJ := $(TESTSRC:%.cpp=$(BUILD_DIR)/%.o)
 TEST_LIB_APP := $(BUILD_DIR)/test_spu
 
-TRANSLATOR_SRC := src/translator/translator.cpp
+TRANSLATOR_SRC := src/translator/translator.cpp src/translator/address.cpp
 TRANSLATOR_OBJ := $(TRANSLATOR_SRC:%.cpp=$(BUILD_DIR)/%.o)
 TRANSLATOR_APP := $(BUILD_DIR)/translator
 

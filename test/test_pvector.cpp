@@ -5,6 +5,12 @@
 #include "pvector.h"
 
 TEST(PVector, PvectorDumps) {
+	char fuck[] = "0xaaffdd";
+	uint64_t uwu = 0;
+	sscanf(fuck, "%lu", &uwu);
+	printf("%lx\n", uwu);
+
+
 	PVECTOR_CREATE(pv, sizeof (short));
 	pvector_set_flags(&pv, FPVECTOR_USE_CANARY | FPVECTOR_USE_ARRAY_HASH);
 	pvector_set_capacity(&pv, 13);
