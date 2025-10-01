@@ -41,6 +41,25 @@ static int register_lookup(const char *str, size_t strlen,
 	return S_FAIL;
 }
 
+int dump_addrdata(struct spu_addrdata addr) {
+	printf("addrhead: <0x%02x>;", *(unsigned char*)&addr.head);
+	if (addr.head.source == SPU_DSRC_DIRECT) {
+		printf(" number: <0x");
+		uint64_t number = addr.direct_number;
+		uint8_t *num_iter = (uint8_t *)&number;
+
+		for (size_t i = 0; i < (1 << addr.head.datalength); i++) {
+			
+			printf("%02x", num_iter[i]);
+		}
+		printf(">");
+	}
+
+	printf("\n");
+
+	return 0;
+}
+
 int parse_address(char *arg,
 			 struct spu_addrdata *addr) {
 	assert (arg);
@@ -139,21 +158,23 @@ int parse_address(char *arg,
 	return S_FAIL;
 }
 
-int dump_addrdata(struct spu_addrdata addr) {
-	printf("addrhead: <0x%02x>;", *(unsigned char*)&addr.head);
-	if (addr.head.source == SPU_DSRC_DIRECT) {
-		printf(" number: <0x");
-		uint64_t number = addr.direct_number;
-		uint8_t *num_iter = (uint8_t *)&number;
+int write_raw_addr(struct spu_addrdata addr, 
+		   uint8_t addrbuf[sizeof(struct spu_addrdata)],
+		   size_t *addrbuf_len) {
+	assert (addrbuf);
+	assert (addrbuf_len);
 
-		for (size_t i = 0; i < (1 << addr.head.datalength); i++) {
-			
-			printf("%02x", num_iter[i]);
-		}
-		printf(">");
-	}
+	*addrbuf_len = 0;
+	memcpy(addrbuf, &addr.head, sizeof(addr.head));
+	*addrbuf_len += sizeof(addr.head);
 
-	printf("\n");
+	size_t dirnum_len = (1 << addr.head.datalength);
+	memcpy(	addrbuf + *addrbuf_len, 
+		&addr.direct_number,
+		dirnum_len
+	);
 
-	return 0;
+	*addrbuf_len += dirnum_len;
+
+	return S_OK;
 }

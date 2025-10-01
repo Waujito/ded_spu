@@ -92,11 +92,14 @@ static int mov_cmd(struct translating_context *ctx) {
 	}
 	dump_addrdata(dst);
 
-	return S_OK;
-}
+	if (src.head.datalength != dst.head.datalength) {
+		log_error("Data lengths does not match");
+		return S_FAIL;
+	}
 
-static int push_cmd(struct translating_context *ctx) {
-	assert (ctx);
+	uint8_t addrbuf[sizeof(struct spu_addrdata)];
+	size_t addrbuf_len = 0;
+	write_raw_addr(dst, addrbuf, &addrbuf_len);
 
 	return S_OK;
 }
@@ -112,7 +115,7 @@ static int raw_opcode(struct translating_context *ctx) {
 
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
-	{"push",	PUSH_OPCODE,	push_cmd},
+	{"push",	PUSH_OPCODE,	raw_opcode},
 	{"halt",	HALT_OPCODE,	raw_opcode},
 	{"dump",	DUMP_OPCODE,	raw_opcode},
 	{0}
