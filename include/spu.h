@@ -1,69 +1,134 @@
 #ifndef SPU_H
 #define SPU_H
 
-#include <netinet/ip.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <sys/types.h>
 #include <bits/endian.h>
 
+/**
+ * The SPU will be little-endian
+ */
 #define SPU_BYTEORDER __LITTLE_ENDIAN
 
-#define MAX_OPCODE_ARGSLEN (16)
+// For internal use
+#define MAX_INSTR_ARGS (16)
 
-// Highest bit should always be reserved
-// for variable-length commands
+/**
+ * Instruction layout:
+ * 6-bit opcode allows up to 2^6 = 64 different instructions with
+ * possibility of extension the instruction set
+ *
+ * |-----------------------------------------------|---------------------|
+ * |                       1 byte                  |        3 bytes      |
+ * |--------------|-----------------|--------------|---------------------|
+ * | reserved bit | 5th bit of rd_0 | 6-bit opcode | instruction payload |
+ * |--------------|-----------------|--------------|---------------------|
+ *
+ * Register pointers are called rd_n. n >= 0
+ * All registers are 5-bit fields which means here are up to 2^5 = 32
+ * general registers.
+ * 
+ *
+ * Here is only one named register, RSP.
+ * The user interface has registers R0-30 + (RSP = 0x1F).
+ *
+ * In the documentation below, the destination register called Rd.
+ *
+ * Rds are typically encoded with 1 bit in header and 4 bits in
+ * instruction payload.
+ *
+ * All registers are independent from each other.
+ * Operations MUST NOT implicitly changle the registers (except RSP).
+ *
+ * The user should pass to the instruction all the registers
+ * he wants to operate on.
+ *
+ * rd_0 register layout:
+ * |------------------------------|--------------------------------------|
+ * | 1 bit in instruction header  |             4-bit field              |
+ * |------------------------------|--------------------------------------|
+ *
+ * rd_n for n > 0 register layout:
+ * |---------------------------------------------------------------------|
+ * |                            5-bit field                              |
+ * |---------------------------------------------------------------------|
+ *
+ */
+
+#define REGISTER_BIT_LEN	(5)
+#define REGISTER_RSP_CODE	(0x1F)
+#define REGISTER_RSP_NAME	("rsp")
+#define REGISTER_HIGHBIT_MASK	(0x10)
+#define REGISTER_4BIT_MASK	(0x0F)
+#define REGISTER_5BIT_MASK	(0x1F)
+
+typedef uint32_t	spu_instruction_t;
+typedef uint8_t		spu_register_num_t;
+
+// The opcode number is 6-bit field up to 2^6 = 64
+// The highest possible number is 0b111111 = 0x3F
 enum spu_opcodes {
+	/**
+	 * Mov instruction.
+	 * Moves the value from one register to another.
+	 *
+	 * Has syntax: mov rd rn
+	 *
+	 * Has layout:
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |----------|------------------|---------------------------------|
+	 * | 4-bit Rd |  2-bits reserved | Rn - source  |                  |
+	 * |----------|------------------|---------------------------------|
+	 */
 	MOV_OPCODE	= (0x01),
-	PUSH_OPCODE	= (0x02),
-	HALT_OPCODE	= (0x73),
-	DUMP_OPCODE	= (0x7d),
+
+	/**
+	 * Load to register instruction.
+	 * Loads the 20-bit integer to the register.
+	 *
+	 * Has layout:
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |----------|------------------|---------------------------------|
+	 * | 4-bit Rd |            20-bit integer number                   |
+	 * |----------|------------------|---------------------------------|
+	 */
+	LDR_OPCODE	= (0x02),
+	DUMP_OPCODE	= (0x3E),
+	HALT_OPCODE	= (0x3F),
 };
 
-// 2-bit field => max is 0b11 = 0x03
-enum spu_datalengths {
-	SPU_DLEN_1BYTE	= (0x00),
-	SPU_DLEN_2BYTE	= (0x01),
-	SPU_DLEN_4BYTE	= (0x02),
-	SPU_DLEN_8BYTE	= (0x03)
-};
+#define MAX_BASE_OPCODE (0x3F)
+#define SPU_INSTR_ARG_BITLEN (24)
 
-
-// 4-bit field => max is 0b1111 = 0x0F
-enum spu_addrsources {
-	SPU_DSRC_RAX	= (0x01),
-	SPU_DSRC_RSP	= (0x02),
-	SPU_DSRC_RCX	= (0x03),
-	SPU_DSRC_RBP	= (0x04),
-	SPU_DSRC_RDX	= (0x05),
-	SPU_DSRC_RSI	= (0x06),
-	SPU_DSRC_RBX	= (0x07),
-	SPU_DSRC_RDI	= (0x08),
-
-	SPU_DSRC_DIRECT	= (0x0a),
-// Indicates the datasource is extended in the next byte
-	SPU_DSRC_EXTEND	= (0x0e),
-};
-
-// 1-byte address header
-struct spu_addrhead {
+struct spu_baseopcode {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-	unsigned int datalength: 2;
-	unsigned int source: 4;
-	unsigned int deref: 1;
-	unsigned int reserved:	1;
+	unsigned int code:	6;
+	unsigned int reg_extended: 1;
+	unsigned int reserved1: 1;
 #elif __BYTE_ORDER == __BIG_ENDIAN
-	unsigned int reserved:	1;
-	unsigned int deref: 1;
-	unsigned int source: 4;
-	unsigned int datalength: 2;
+	unsigned int reserved1: 1;
+	unsigned int reg_extended: 1;
+	unsigned int code:	6;
 #else
 # error	"Please fix <bits/endian.h>"
 #endif
 } __attribute__((packed));
 
-struct spu_addrdata {
-	struct spu_addrhead head;
+struct spu_instruction {
+	union {
+		spu_instruction_t instruction;
 
-	// MUST be little-endian
-	uint64_t direct_number;
-};
+		struct {
+			union {
+				uint8_t byte_opcode;
+				struct spu_baseopcode opcode;
+			};
+			uint32_t arg: 24;
+		} __attribute__((packed));
+	};
+} __attribute__((packed));
 
 #endif /* SPU_H */

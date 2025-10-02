@@ -11,13 +11,9 @@
 static inline int is_comment_string(char *arg) {
 	assert (arg);
 
-	while (*arg != '\0') {
-		if (*arg == ';') {
-			*arg = '\0';
-			return 1;
-		}
-
-		arg++;
+	char *comment_ptr = strchr(arg, ';');
+	if (comment_ptr) {
+		*comment_ptr = '\0';
 	}
 
 	return 0;
@@ -25,6 +21,7 @@ static inline int is_comment_string(char *arg) {
 
 static const char *const argsplit_syms = " \n\t";
 
+// TODO rename tokenize
 static ssize_t parse_opcodeline(char *lineptr, char *argsptrs[MAX_OPCODE_ARGSLEN]) {
 	assert (lineptr);
 	assert (argsptrs);
@@ -33,8 +30,10 @@ static ssize_t parse_opcodeline(char *lineptr, char *argsptrs[MAX_OPCODE_ARGSLEN
 
 	ssize_t n_args = 0;
 	char *strtok_ptr = lineptr;
-	for (; n_args < MAX_OPCODE_ARGSLEN; strtok_ptr = NULL, n_args++) {
-		char *subtoken = strtok_r(strtok_ptr, argsplit_syms, &saveptr);
+	for (; n_args < MAX_OPCODE_ARGSLEN; 
+			strtok_ptr = NULL, n_args++) {
+		char *subtoken = strtok_r(strtok_ptr,
+			    argsplit_syms, &saveptr);
 		if (subtoken == NULL)
 			break;
 
@@ -55,11 +54,12 @@ static ssize_t parse_opcodeline(char *lineptr, char *argsptrs[MAX_OPCODE_ARGSLEN
 	return n_args;
 }
 
-typedef int(*op_parsing_fn)(struct translating_context *ctx);
+typedef int(*op_parsing_fn)(struct translating_context *ctx,
+			    struct spu_instruction *instr);
 
 struct op_cmd {
 	const char *cmd_name;
-	int opcode;
+	unsigned int opcode;
 	op_parsing_fn fun;
 };
 
@@ -70,7 +70,84 @@ struct translating_context {
 	const struct op_cmd *op_data;
 };
 
-static int mov_cmd(struct translating_context *ctx) {
+static int raw_cmd(struct translating_context *ctx, struct spu_instruction *instr) {
+	assert (ctx);
+	assert (instr);
+
+	unsigned int opcode = ctx->op_data->opcode;
+	assert (opcode <= MAX_BASE_OPCODE);
+
+	instr->opcode.code	= opcode;
+	instr->opcode.reserved1 = 0;
+
+	return S_OK;
+}
+
+/**
+ * pos in bits, [0; 23] accepted
+ */ 
+static ssize_t set_register(spu_register_num_t rn,
+			struct spu_instruction *instr, 
+			size_t pos, int set_head_bit) {
+	assert (instr);
+	if (pos >= 24) {
+		return -1;
+	}
+
+	unsigned int use_head_bit = (set_head_bit != 0);
+
+	size_t reg_copy_len = REGISTER_BIT_LEN - use_head_bit;
+	if (pos + reg_copy_len >= SPU_INSTR_ARG_BITLEN) {
+		return -1;
+	}
+
+	uint32_t arg = instr->arg;
+	size_t shift = SPU_INSTR_ARG_BITLEN - reg_copy_len - pos;
+
+	
+	if (use_head_bit) {
+		instr->opcode.reg_extended = (
+			(rn & REGISTER_HIGHBIT_MASK) == REGISTER_HIGHBIT_MASK);
+		rn &= (~REGISTER_HIGHBIT_MASK);
+		arg &= (uint32_t)(~(REGISTER_4BIT_MASK << shift));
+	} else {
+		arg &= (uint32_t)(~(REGISTER_5BIT_MASK << shift));
+	}
+
+	arg |= (((uint32_t)rn) << shift);
+
+	instr->arg = arg;
+	return S_OK;
+}
+
+/**
+ * Parses a register.
+ * Returns the number of register or -1 on error.
+ */ 
+static int parse_register(const char *str) {
+	if (str[0] != 'r') {
+		return S_FAIL;
+	}
+
+	str++;
+
+	char *endptr = NULL;
+	unsigned long rnum = strtoul(str, &endptr, 10);
+	if (!(*str != '\0' && *endptr == '\0')) {
+		if (!strcmp(str, REGISTER_RSP_NAME)) {
+			return REGISTER_RSP_CODE;
+		}
+	}
+
+	if (rnum > 30) {
+		return S_FAIL;
+	}
+
+	return (int) rnum;
+}
+
+static int mov_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
 	assert (ctx);
 	
 	if (ctx->n_args != 1 + 2) {
@@ -97,32 +174,49 @@ static int mov_cmd(struct translating_context *ctx) {
 		return S_FAIL;
 	}
 
-	uint8_t addrbuf[sizeof(struct spu_addrdata)];
+	uint8_t cmdbuf[1 + 2 * sizeof(struct spu_addrdata)];
+	size_t buflen = 0;
 	size_t addrbuf_len = 0;
-	write_raw_addr(dst, addrbuf, &addrbuf_len);
+
+	cmdbuf[0] = (uint8_t)ctx->op_data->opcode;
+	buflen++;
+
+	write_raw_addr(dst, cmdbuf + buflen, &addrbuf_len);
+	buflen += addrbuf_len;
+
+	write_raw_addr(dst, cmdbuf + buflen, &addrbuf_len);
+	buflen += addrbuf_len;
+
+	fwrite(cmdbuf, 1, buflen, ctx->out_stream);
 
 	return S_OK;
 }
 
-static int raw_opcode(struct translating_context *ctx) {
+static int ldr_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
 	assert (ctx);
 
-	uint8_t opcode = (uint8_t)ctx->op_data->opcode;
-	fwrite(&opcode, 1, 1, ctx->out_stream);
-
-	return S_OK;
+	if (raw_cmd(ctx, instr)) {
+		return S_FAIL;
+	}
+	
+	if (ctx->n_args != 1 + 2) {
+		return S_FAIL;
+	}
 }
 
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
-	{"push",	PUSH_OPCODE,	raw_opcode},
-	{"halt",	HALT_OPCODE,	raw_opcode},
-	{"dump",	DUMP_OPCODE,	raw_opcode},
+	{"ldr",		LDR_OPCODE,	ldr_cmd},
+	{"halt",	HALT_OPCODE,	raw_cmd},
+	{"dump",	DUMP_OPCODE,	raw_cmd},
 	{0}
 };
 
-static int parse_op(struct translating_context *ctx) {
+static int parse_op(struct translating_context *ctx,
+		    struct spu_instruction *instr) {
 	assert (ctx);
+	assert (instr);
 	assert (ctx->argsptrs);
 
 	if (ctx->n_args == 0) {
@@ -135,7 +229,7 @@ static int parse_op(struct translating_context *ctx) {
 	while (op_cmd_ptr->cmd_name != NULL) {
 		if (!strcmp(cmd, op_cmd_ptr->cmd_name)) {
 			ctx->op_data = op_cmd_ptr;
-			return op_cmd_ptr->fun(ctx);
+			return op_cmd_ptr->fun(ctx, instr);
 		}
 		op_cmd_ptr++;
 	}
@@ -143,8 +237,9 @@ static int parse_op(struct translating_context *ctx) {
 	return S_FAIL;
 }
 
-int parse_text(FILE *in_stream) {
+int parse_text(FILE *in_stream, FILE *out_stream) {
 	assert (in_stream);
+	assert (out_stream);
 
 	int ret = S_OK;
 
@@ -154,8 +249,15 @@ int parse_text(FILE *in_stream) {
 
 	size_t n_lines = 0;
 
+	struct translating_context ctx = {
+		.argsptrs = NULL,
+		.n_args = 0,
+		.out_stream = out_stream,
+		.op_data = NULL,
+	};
+
 	while ((nread = getline(&lineptr, &linesz, stdin)) != -1) {
-		char *argsptrs[MAX_OPCODE_ARGSLEN];
+		char *argsptrs[MAX_INSTR_ARGS];
 		ssize_t n_args = 0;
 
 		if ((n_args = parse_opcodeline(lineptr, argsptrs)) < 0) {
@@ -163,27 +265,30 @@ int parse_text(FILE *in_stream) {
 			_CT_FAIL();
 		}
 
-		struct translating_context ctx = {
-			.argsptrs = argsptrs,
-			.n_args = (size_t) n_args
-		};
+		ctx.argsptrs = argsptrs;
+		ctx.n_args = (size_t)n_args;
 
-		if (parse_op(&ctx)) {
+		struct spu_instruction instr = {0};
+
+		if (parse_op(&ctx, &instr)) {
 			log_error("Invalid line #%zu", n_lines);
 			_CT_FAIL();
 		}
+
+		fwrite(&instr, sizeof(instr), 1, out_stream);
 
 		n_lines++;
 	}
 
 _CT_EXIT_POINT:
 	free (lineptr);
+	fflush (out_stream);
 	return ret;
 }
 
 
 int main() {
-	if (parse_text(stdin)) {
+	if (parse_text(stdin, stdout)) {
 		return 1;
 	}
 
