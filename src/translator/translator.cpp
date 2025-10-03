@@ -90,7 +90,7 @@ static int raw_cmd(struct translating_context *ctx, struct spu_instruction *inst
 	return S_OK;
 }
 
-static inline ssize_t instr_set_bitfield(
+static ssize_t instr_set_bitfield(
 	uint32_t field, size_t fieldlen,
 	struct spu_instruction *instr, size_t pos) {
 	assert (instr);
@@ -125,13 +125,14 @@ static inline ssize_t instr_set_bitfield(
 	eprintf("mask: <0x%0x>; shift: <%zu>; ", mask, shift);	
 #endif /* DEBUG_SETBITFIELD */
 
-	uint32_t shifted_field = (((uint32_t)field) << shift);
+	uint32_t shifted_mask = (mask << shift);
+	uint32_t shifted_field = (field << shift);
 
 #ifdef DEBUG_SETBITFIELD
 	eprintf("shifted field: <0x%x>\n", shifted_field);
 #endif /* DEBUG_SETBITFIELD */
 
-	arg &= (uint32_t)(~(mask << shift));
+	arg &= (~shifted_mask);
 	arg |= (shifted_field);
 
 	arg = htonl(arg);
@@ -210,7 +211,7 @@ static int parse_literal_number(const char *str, int32_t *num) {
 	assert (str);
 	assert (num);
 
-	if (*str != '#') {
+	if (*str != '$') {
 		return S_FAIL;
 	}
 	str++;
@@ -323,6 +324,8 @@ const static struct op_cmd op_data[] = {
 	{0}
 };
 
+#define S_EMPTY_INSTR (2)
+
 static int parse_op(struct translating_context *ctx,
 		    struct spu_instruction *instr) {
 	assert (ctx);
@@ -330,7 +333,7 @@ static int parse_op(struct translating_context *ctx,
 	assert (ctx->argsptrs);
 
 	if (ctx->n_args == 0) {
-		return S_OK;
+		return S_EMPTY_INSTR;
 	}
 	
 	char *cmd = ctx->argsptrs[0];
@@ -380,18 +383,20 @@ int parse_text(FILE *in_stream, FILE *out_stream) {
 
 		struct spu_instruction instr = {0};
 
-		if (parse_op(&ctx, &instr)) {
+		if ((ret = parse_op(&ctx, &instr)) < 0) {
 			log_error("Invalid line #%zu", n_lines);
 			_CT_FAIL();
 		}
 
+		if (ret != S_EMPTY_INSTR) {
 #ifdef T_DEBUG
-		eprintf("Writing instruction: <0x");
-		buf_dump_hex(&instr, sizeof (instr), stderr);
-		eprintf(">\n");
+			eprintf("Writing instruction: <0x");
+			buf_dump_hex(&instr, sizeof (instr), stderr);
+			eprintf(">\n");
 #endif /* T_DEBUG */
-
-		fwrite(&instr, sizeof(instr), 1, out_stream);
+		
+			fwrite(&instr, sizeof(instr), 1, out_stream);
+		}
 
 		n_lines++;
 	}
