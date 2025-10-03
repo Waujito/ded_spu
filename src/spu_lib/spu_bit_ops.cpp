@@ -3,6 +3,29 @@
 #include "spu.h"
 #include "spu_bit_ops.h"
 
+uint32_t get_instr_arg(const struct spu_instruction *instr) {
+	assert (instr);
+
+	uint32_t arg = instr->arg;
+#ifdef __LITTLE_ENDIAN
+	arg <<= 8;
+#endif
+	arg = ntohl(arg);
+
+	return arg;
+}
+
+void set_instr_arg(struct spu_instruction *instr, uint32_t arg) {
+	assert (instr);
+
+	arg = htonl(arg);
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+	arg >>= 8;
+#endif
+	instr->arg = arg;
+}
+
 int instr_set_bitfield(
 	uint32_t field, size_t fieldlen,
 	struct spu_instruction *instr, size_t pos) {
@@ -14,14 +37,7 @@ int instr_set_bitfield(
 
 	uint32_t mask = (1 << (fieldlen));
 	mask -= 1;
-	uint32_t arg = instr->arg;
-
-	// Shift because of 24-bit field
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	arg <<= 8;
-#endif
-
-	arg = ntohl(arg);
+	uint32_t arg = get_instr_arg(instr);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
 
@@ -31,13 +47,7 @@ int instr_set_bitfield(
 	arg &= (~shifted_mask);
 	arg |= (shifted_field);
 
-	arg = htonl(arg);
-
-	// Shift because of 24-bit field
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	arg >>= 8;
-#endif
-	instr->arg = arg;
+	set_instr_arg(instr, arg);
 
 	return S_OK;
 }
@@ -55,13 +65,7 @@ int instr_get_bitfield(
 	uint32_t mask = (1 << (fieldlen));
 	mask -= 1;
 
-	uint32_t arg = instr->arg;
-
-	// Shift because of 24-bit field
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	arg <<= 8;
-#endif
-	arg = ntohl(arg);
+	uint32_t arg = get_instr_arg(instr);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
 

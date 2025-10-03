@@ -29,7 +29,7 @@ LDFLAGS := -lm
 TESTLIBSRC := test/test_runner.cpp
 TESTLIBOBJ := $(TESTLIBSRC:%.cpp=$(BUILD_DIR)/%.o)
 
-TESTSRC := test/test_pvector.cpp test/test_cppvector.cpp test/test_crc32.cpp
+TESTSRC := test/test_bit_ops.cpp
 TESTOBJ := $(TESTSRC:%.cpp=$(BUILD_DIR)/%.o)
 TEST_LIB_APP := $(BUILD_DIR)/test_spu
 
@@ -88,10 +88,10 @@ $(SPULIB_STATIC): $(SPULIB_OBJ)
 	ar rvs $@ $^
 
 ifdef USE_GTEST
-$(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ)
+$(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ) $(SPULIB_STATIC)
 	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(STATIC_LIB) $(SPULIB_STATIC) -lgtest_main -lgtest -o $(TEST_LIB_APP)
 else
-$(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ) $(TESTLIBOBJ)
+$(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ) $(TESTLIBOBJ) $(SPULIB_STATIC)
 	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(TESTLIBOBJ) $(STATIC_LIB) $(SPULIB_STATIC) -o $(TEST_LIB_APP)
 endif
 

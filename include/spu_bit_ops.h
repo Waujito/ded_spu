@@ -3,6 +3,10 @@
 
 #include "spu.h"
 
+
+uint32_t get_instr_arg(const struct spu_instruction *instr);
+void set_instr_arg(struct spu_instruction *instr, uint32_t arg);
+
 int instr_set_bitfield(
 	uint32_t field, size_t fieldlen,
 	struct spu_instruction *instr, size_t pos);
