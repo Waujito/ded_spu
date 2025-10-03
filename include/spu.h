@@ -5,6 +5,9 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <bits/endian.h>
+#include <arpa/inet.h>
+
+#include "types.h"
 
 /**
  * The SPU will be little-endian
@@ -134,6 +137,6 @@ struct spu_instruction {
 			uint32_t arg: 24;
 		} __attribute__((packed));
 	};
-} __attribute__((packed));
+};
 
 #endif /* SPU_H */

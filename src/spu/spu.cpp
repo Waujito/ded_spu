@@ -1,13 +1,10 @@
-#include <string.h>
 #include <stdlib.h>
-#include <sys/stat.h>
-#include <assert.h>
-#include <arpa/inet.h>
 
-#include "types.h"
 #include "spu.h"
-#include "ctio.h"
+#include "spu_bit_ops.h"
 #include "spu_debug.h"
+
+#include "ctio.h"
 
 #ifdef _DEBUG
 #define DEBUG_INSTRUCTIONS
@@ -28,7 +25,7 @@ struct spu_context {
 	size_t ip; 
 };
 
-int dump_spu(struct spu_context *ctx, FILE *out_stream) {
+static int dump_spu(struct spu_context *ctx, FILE *out_stream) {
 	assert (ctx);
 
 #define DPRINT(...) fprintf(out_stream, __VA_ARGS__)
@@ -54,63 +51,7 @@ int dump_spu(struct spu_context *ctx, FILE *out_stream) {
 	return S_OK;
 }
 
-static int instr_get_bitfield(
-	uint32_t *field, size_t fieldlen,
-	const struct spu_instruction *instr, size_t pos) {
-	assert (field);
-	assert (instr);
-
-	if (pos + fieldlen > SPU_INSTR_ARG_BITLEN) {
-		return -1;
-	}
-
-	uint32_t mask = (1 << (fieldlen)) - 1;
-
-	uint32_t arg = instr->arg;
-
-	// Shift because of 24-bit field
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	arg <<= 8;
-#endif
-	arg = ntohl(arg);
-
-	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
-
-	uint32_t shifted_mask = (mask << shift);
-
-	uint32_t shifted_field = (arg & shifted_mask);
-	uint32_t real_field = shifted_field >> shift;
-
-	*field = real_field;
-	
-	return S_OK;
-}
-
-static int instr_get_register(spu_register_num_t *rn,
-			const struct spu_instruction *instr, 
-			size_t pos, int spec_head_bit) {
-	assert (rn);
-	assert (instr);
-
-	unsigned int use_head_bit = (spec_head_bit != 0);
-
-	size_t reg_len = REGISTER_BIT_LEN - use_head_bit;
-
-	uint32_t regnum = 0;
-	if (instr_get_bitfield(&regnum, reg_len, instr, pos)) {
-		return S_FAIL;
-	}
-
-	if (use_head_bit && instr->opcode.reg_extended) {
-		regnum |= REGISTER_HIGHBIT_MASK;
-	}
-
-	*rn = (uint8_t)regnum;
-
-	return S_OK;
-}
-
-int execute(struct spu_context *ctx) {
+static int execute(struct spu_context *ctx) {
 	assert (ctx);
 
 	while (ctx->ip < ctx->instr_bufsize) {
@@ -157,10 +98,10 @@ int execute(struct spu_context *ctx) {
 	return S_OK;
 }
 
-int parse_stream(const char *in_filename) {
+static int parse_stream(const char *in_filename) {
 	spu_instruction_t *instr_buf = NULL;
 	size_t instr_bufsize = 0;
-	struct spu_context ctx = {0};
+	struct spu_context ctx = {{0}};
 	int ret = S_OK;
 
 	_CT_CHECKED(read_file(in_filename, (char **)&instr_buf, &instr_bufsize));
