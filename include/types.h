@@ -9,8 +9,8 @@ enum status_codes {
 	S_FAIL	= -1
 };
 
-#define _CT_FAILED(status)		(status != S_OK)
-#define _CT_SUCCEEDED(status)		(status == S_OK)
+#define _CT_FAILED(status)		((status) != S_OK)
+#define _CT_SUCCEEDED(status)		((status) == S_OK)
 
 
 #define _CT_EXIT_POINT exit

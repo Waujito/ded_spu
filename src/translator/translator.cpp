@@ -110,7 +110,9 @@ static inline ssize_t instr_set_bitfield(
 #endif /* DEBUG_SETBITFIELD */
 
 	// Shift because of 24-bit field
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	arg <<= 8;
+#endif
 	arg = ntohl(arg);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
@@ -123,14 +125,14 @@ static inline ssize_t instr_set_bitfield(
 	eprintf("mask: <0x%0x>; shift: <%zu>; ", mask, shift);	
 #endif /* DEBUG_SETBITFIELD */
 
-	uint32_t after_shift = (((uint32_t)field) << shift);
+	uint32_t shifted_field = (((uint32_t)field) << shift);
 
 #ifdef DEBUG_SETBITFIELD
-	eprintf("after shifting: <0x%x>\n", after_shift);
+	eprintf("shifted field: <0x%x>\n", shifted_field);
 #endif /* DEBUG_SETBITFIELD */
 
 	arg &= (uint32_t)(~(mask << shift));
-	arg |= (((uint32_t)field) << shift);
+	arg |= (shifted_field);
 
 	arg = htonl(arg);
 
@@ -141,7 +143,9 @@ static inline ssize_t instr_set_bitfield(
 #endif /* DEBUG_SETBITFIELD */
 
 	// Shift because of 24-bit field
+#if __BYTE_ORDER == __LITTLE_ENDIAN
 	arg >>= 8;
+#endif
 	instr->arg = arg;
 
 	return S_OK;
@@ -240,7 +244,6 @@ static int mov_cmd(struct translating_context *ctx,
 		return S_FAIL;
 	}
 	rd = (spu_register_num_t)ret;
-	eprintf("register <%u>\n", rd);
 
 	if ((ret = parse_register(ctx->argsptrs[2])) < 0) {
 		log_error("Error while parsing register <%s>", ctx->argsptrs[2]);

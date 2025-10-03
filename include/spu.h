@@ -14,6 +14,8 @@
 // For internal use
 #define MAX_INSTR_ARGS (16)
 
+#define INSTRUCTION_SIZE (4)
+
 /**
  * Instruction layout:
  * 6-bit opcode allows up to 2^6 = 64 different instructions with
@@ -57,6 +59,7 @@
  */
 
 #define REGISTER_BIT_LEN	(5)
+#define N_REGISTERS		(32)
 #define REGISTER_RSP_CODE	(0x1F)
 #define REGISTER_RSP_NAME	("rsp")
 #define REGISTER_HIGHBIT_MASK	(0x10)
