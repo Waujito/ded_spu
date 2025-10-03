@@ -51,8 +51,51 @@ static int dump_spu(struct spu_context *ctx, FILE *out_stream) {
 	return S_OK;
 }
 
+#define S_EXIT (3)
+
+static int exec_instruction(struct spu_context *ctx, struct spu_instruction instr) {
+	uint32_t num = 0;
+	spu_register_num_t rd = 0;
+	spu_register_num_t rn = 0;
+
+	switch (instr.opcode.code) {
+		case MOV_OPCODE:
+			instr_get_register(&rd, &instr, 0, 1);
+			instr_get_register(&rn, &instr, 4 + 2, 0);
+			INSTR_DEBUG_LOG("MOV rd: <%d>, rn: <%d>\n", rd, rn);
+
+			ctx->registers[rd] = ctx->registers[rn];
+
+			break;
+		case LDR_OPCODE:
+			instr_get_register(&rd, &instr, 0, 1);
+			instr_get_bitfield(&num, 20, &instr, 4);
+
+			INSTR_DEBUG_LOG("LDR rd: <%d>, number: <%u>\n", rd, num);
+
+			num = htole32(num);
+			ctx->registers[rd] = num;
+
+			break;
+		case DUMP_OPCODE:
+			INSTR_DEBUG_LOG("DUMP\n");
+			dump_spu(ctx, stdout);
+			break;
+		case HALT_OPCODE:
+			INSTR_DEBUG_LOG("HALT\n");
+			return S_EXIT;
+		default:
+			INSTR_DEBUG_LOG("Unknown instruction: %d", instr.opcode.code);
+			return S_FAIL;
+	}
+
+	return S_OK;
+}
+
 static int execute(struct spu_context *ctx) {
 	assert (ctx);
+
+	int ret = S_OK;
 
 	while (ctx->ip < ctx->instr_bufsize) {
 		struct spu_instruction instr = {
@@ -60,38 +103,13 @@ static int execute(struct spu_context *ctx) {
 		};
 		ctx->ip++;
 
-		uint32_t num = 0;
-		spu_register_num_t rd = 0;
-		spu_register_num_t rn = 0;
-
-		switch (instr.opcode.code) {
-			case MOV_OPCODE:
-				instr_get_register(&rd, &instr, 0, 1);
-				instr_get_register(&rn, &instr, 4 + 2, 0);
-				INSTR_DEBUG_LOG("MOV rd: <%d>, rn: <%d>\n", rd, rn);
-
-				ctx->registers[rd] = ctx->registers[rn];
-
-				break;
-			case LDR_OPCODE:
-				instr_get_register(&rd, &instr, 0, 1);
-				instr_get_bitfield(&num, 20, &instr, 4);
-
-				INSTR_DEBUG_LOG("LDR rd: <%d>, number: <%u>\n", rd, num);
-
-				num = htole32(num);
-				ctx->registers[rd] = num;
-
-				break;
-			case DUMP_OPCODE:
-				INSTR_DEBUG_LOG("DUMP\n");
-				dump_spu(ctx, stdout);
-				break;
-			case HALT_OPCODE:
-				INSTR_DEBUG_LOG("HALT\n");
-				break;
-			default:
+		ret = exec_instruction(ctx, instr);
+		if (ret) {
+			if (ret < 0) {
 				return S_FAIL;
+			} else {
+				return S_OK;
+			}
 		}
 	}
 
