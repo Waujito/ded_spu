@@ -95,7 +95,9 @@ enum spu_opcodes {
 	 * | 4-bit Rd |            20-bit integer number                   |
 	 * |----------|------------------|---------------------------------|
 	 */
+#define LDR_INTEGER_LEN (20)
 	LDR_OPCODE	= (0x02),
+
 	DUMP_OPCODE	= (0x3E),
 	HALT_OPCODE	= (0x3F),
 };

@@ -6,6 +6,7 @@
 #include "types.h"
 #include "spu.h"
 #include "ctio.h"
+#include "spu_debug.h"
 
 struct spu_context {
 	uint64_t rax;
@@ -13,17 +14,6 @@ struct spu_context {
 	size_t instr_bufsize;
 	size_t ip; 
 };
-
-int buf_dump_hex(void *buf, size_t buflen, FILE *out_stream) {
-	assert (buf);
-	assert (out_stream);
-
-	for (size_t i = 0; i < buflen; i++) {
-		fprintf(out_stream, "%02x", *(((uint8_t *)buf) + i));
-	}
-
-	return S_OK;
-}
 
 int dump_spu(struct spu_context *ctx, FILE *out_stream) {
 	assert (ctx);
@@ -49,7 +39,7 @@ int execute(struct spu_context *ctx) {
 
 		switch (opcode) {
 			case MOV_OPCODE:
-			case PUSH_OPCODE:
+			// case PUSH_OPCODE:
 			case DUMP_OPCODE:
 				dump_spu(ctx, stdout);
 				break;
