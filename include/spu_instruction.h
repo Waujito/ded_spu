@@ -113,30 +113,39 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			ctx->registers[rd] = num;
 
 			break;
+
+
+#define TRIPLE_REG_READ__(instr_name)					\
+	_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));		\
+	_CT_CHECKED(instr_get_register(&rl, &instr,			\
+		  FREGISTER_BIT_LEN, 0));				\
+	_CT_CHECKED(instr_get_register(&rr, &instr,			\
+		  FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));		\
+	INSTR_LOG(instr, instr_name " r%d r%d r%d", rd, rl, rr)
+
 		case ADD_OPCODE:
-			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_register(&rl, &instr,
-				  FREGISTER_BIT_LEN, 0));
-			_CT_CHECKED(instr_get_register(&rr, &instr,
-				  FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
-
-			INSTR_LOG(instr, "add r%d r%d r%d", rd, rl, rr);
-
+			TRIPLE_REG_READ__("add");
 			ctx->registers[rd] = ctx->registers[rl] + ctx->registers[rr];
-
 			break;
 		case MUL_OPCODE:
-			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_register(&rl, &instr,
-				  FREGISTER_BIT_LEN, 0));
-			_CT_CHECKED(instr_get_register(&rr, &instr,
-				  FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
-
-			INSTR_LOG(instr, "mul r%d r%d r%d", rd, rl, rr);
-
+			TRIPLE_REG_READ__("mul");
 			ctx->registers[rd] = ctx->registers[rl] * ctx->registers[rr];
-
 			break;
+		case SUB_OPCODE:
+			TRIPLE_REG_READ__("sub");
+			ctx->registers[rd] = ctx->registers[rl] - ctx->registers[rr];
+			break;
+		case DIV_OPCODE:
+			TRIPLE_REG_READ__("div");
+			ctx->registers[rd] = ctx->registers[rl] / ctx->registers[rr];
+			break;
+		case MOD_OPCODE:
+			TRIPLE_REG_READ__("mod");
+			ctx->registers[rd] = ctx->registers[rl] % ctx->registers[rr];
+			break;
+#undef TRIPLE_ARG_READ__
+
+
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM
 			return DisasmDirectiveInstruction(ctx, instr);

@@ -202,6 +202,9 @@ const static struct op_cmd op_data[] = {
 	{"ldr",		LDR_OPCODE,	ldr_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
 	{"mul",		MUL_OPCODE,	triple_reg_cmd},
+	{"sub",		SUB_OPCODE,	triple_reg_cmd},
+	{"div",		DIV_OPCODE,	triple_reg_cmd},
+	{"mod",		MOD_OPCODE,	triple_reg_cmd},
 	{"dump",	DUMP_OPCODE,	directive_cmd},
 	{"halt",	HALT_OPCODE,	directive_cmd},
 	{0}

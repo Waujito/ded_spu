@@ -107,7 +107,8 @@ enum spu_opcodes {
 	LDR_OPCODE	= (0x02),
 
 	/**
-	 * rd = rl + rr
+	 * Triple-register commands goes below. The syntax:
+	 * rd = rl (op) rr
 	 *
 	 * Has layout:
 	 * |---------------------------------------------------------------|
@@ -118,6 +119,10 @@ enum spu_opcodes {
 	 */
 	ADD_OPCODE	= (0x03),
 	MUL_OPCODE	= (0x04),
+	SUB_OPCODE	= (0x05),
+	// Integer division
+	DIV_OPCODE	= (0x06),
+	MOD_OPCODE	= (0x07),
 
 	/**
 	 * Here are only 64 possible instructions,
