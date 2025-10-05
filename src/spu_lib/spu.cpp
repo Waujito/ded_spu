@@ -65,6 +65,7 @@ _CT_EXIT_POINT:
 #define S_EXIT (3)
 
 int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr) {
+	assert (ctx);
 	uint32_t num = 0;
 	spu_register_num_t rd = 0;
 	spu_register_num_t rn = 0;
@@ -96,7 +97,7 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 			INSTR_DEBUG_LOG("HALT\n");
 			return S_EXIT;
 		default:
-			INSTR_DEBUG_LOG("Unknown instruction: %d", instr.opcode.code);
+			INSTR_DEBUG_LOG("Unknown instruction: %d\n", instr.opcode.code);
 			return S_FAIL;
 	}
 

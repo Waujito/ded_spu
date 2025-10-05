@@ -4,6 +4,7 @@
 #include "spu_asm.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
+#include "translator_parsers.h"
 
 #ifdef _DEBUG
 #define T_DEBUG
@@ -61,6 +62,7 @@ struct op_cmd {
 	const char *cmd_name;
 	unsigned int opcode;
 	op_parsing_fn fun;
+	op_parsing_fn disasm_fun;
 };
 
 struct translating_context {
@@ -79,56 +81,6 @@ static int raw_cmd(struct translating_context *ctx, struct spu_instruction *inst
 
 	instr->opcode.code	= opcode;
 	instr->opcode.reserved1 = 0;
-
-	return S_OK;
-}
-
-/**
- * Parses a register.
- * Returns the number of register or -1 on error.
- */ 
-static int parse_register(const char *str) {
-	if (str[0] != 'r') {
-		return S_FAIL;
-	}
-
-	str++;
-
-	char *endptr = NULL;
-	unsigned long rnum = strtoul(str, &endptr, 10);
-	if (!(*str != '\0' && *endptr == '\0')) {
-		str--;
-
-		if (!strcmp(str, REGISTER_RSP_NAME)) {
-			return REGISTER_RSP_CODE;
-		}
-
-		return S_FAIL;
-	}
-
-	if (rnum > 30) {
-		return S_FAIL;
-	}
-
-	return (int) rnum;
-}
-
-static int parse_literal_number(const char *str, int32_t *num) {
-	assert (str);
-	assert (num);
-
-	if (*str != '$') {
-		return S_FAIL;
-	}
-	str++;
-
-	char *endptr = NULL;
-	int32_t rnum = (int32_t)strtol(str, &endptr, 0);
-	if (!(*str != '\0' && *endptr == '\0')) {
-		return S_FAIL;
-	}
-
-	*num = rnum;
 
 	return S_OK;
 }

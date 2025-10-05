@@ -33,7 +33,8 @@ TESTSRC := test/test_bit_ops.cpp
 TESTOBJ := $(TESTSRC:%.cpp=$(BUILD_DIR)/%.o)
 TEST_LIB_APP := $(BUILD_DIR)/test_spu
 
-SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp src/spu_lib/spu.cpp
+SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp src/spu_lib/spu.cpp src/spu_lib/translator_parsers.cpp
+
 SPULIB_OBJ := $(SPULIB_SRC:%.cpp=$(BUILD_DIR)/%.o)
 SPULIB_STATIC := $(BUILD_DIR)/spulib.a
 
@@ -41,14 +42,18 @@ TRANSLATOR_SRC := src/translator/translator.cpp# src/translator/address.cpp
 TRANSLATOR_OBJ := $(TRANSLATOR_SRC:%.cpp=$(BUILD_DIR)/%.o)
 TRANSLATOR_APP := $(BUILD_DIR)/translator
 
+DISASM_SRC := src/translator/disassembler.cpp
+DISASM_OBJ := $(DISASM_SRC:%.cpp=$(BUILD_DIR)/%.o)
+DISASM_APP := $(BUILD_DIR)/disassembler
+
 SPU_SRC := src/spu/spu_runner.cpp
 SPU_OBJ := $(SPU_SRC:%.cpp=$(BUILD_DIR)/%.o)
 SPU_APP := $(BUILD_DIR)/spu
 
-INCPDSRC := $(SPU_SRC) $(TRANSLATOR_SRC) $(TESTSRC) $(SPULIB_SRC) $(TESTLIBSRC)
+INCPDSRC := $(SPU_SRC) $(TRANSLATOR_SRC) $(DISASM_SRC) $(TESTSRC) $(SPULIB_SRC) $(TESTLIBSRC)
 incpd := $(INCPDSRC:%.cpp=$(BUILD_DIR)/%.d)
 
-OBJFILES := $(LIBOBJ) $(TESTOBJ) $(TRANSLATOR_OBJ) $(SPU_OBJ) $(TESTLIBOBJ) $(SPULIB_OBJ)
+OBJFILES := $(LIBOBJ) $(TESTOBJ) $(TRANSLATOR_OBJ) $(SPU_OBJ) $(DISASM_OBJ) $(TESTLIBOBJ) $(SPULIB_OBJ)
 OBJDIRS := $(sort $(dir $(OBJFILES)))
 
 define INCFIRE
@@ -63,7 +68,7 @@ endef
 
 .PHONY: build clean run test document build_test objdirs
 
-build: $(SPU_APP) $(TRANSLATOR_APP) $(STATIC_LIB) $(SPULIB_STATIC)
+build: $(SPU_APP) $(TRANSLATOR_APP) $(DISASM_APP) $(STATIC_LIB) $(SPULIB_STATIC)
 	$(INCFIRE)
 
 spu: $(SPU_APP)
@@ -71,6 +76,9 @@ spu: $(SPU_APP)
 
 translator: $(TRANSLATOR_APP)
 	./$(TRANSLATOR_APP)
+
+disasm: $(DISASM_APP)
+	./$(DISASM_APP)
 
 $(OBJDIRS):
 	mkdir -p $(OBJDIRS)
@@ -104,6 +112,9 @@ test: build_test
 
 $(TRANSLATOR_APP): $(TRANSLATOR_OBJ) $(STATIC_LIB) $(SPULIB_STATIC)
 	$(CXX) $(FLAGS) $(LDFLAGS) $(TRANSLATOR_OBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $@ 
+
+$(DISASM_APP): $(DISASM_OBJ) $(STATIC_LIB) $(SPULIB_STATIC)
+	$(CXX) $(FLAGS) $(LDFLAGS) $(DISASM_OBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $@ 
 
 $(SPU_APP): $(SPU_OBJ) $(STATIC_LIB) $(SPULIB_STATIC)
 	$(CXX) $(FLAGS) $(LDFLAGS) $(SPU_OBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $@
