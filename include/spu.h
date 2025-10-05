@@ -22,7 +22,6 @@ int SPULoadBinary(struct spu_context *ctx, const char *filename);
 
 int SPUDump(struct spu_context *ctx, FILE *out_stream);
 
-int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr);
 int SPUExecute(struct spu_context *ctx);
 
 #endif /* SPU_H */

@@ -4,19 +4,15 @@
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
-#include "ctio.h"
+#define SPU_INSTR_MODE_EXEC
 
 #ifdef _DEBUG
 #define DEBUG_INSTRUCTIONS
 #endif
 
+#include "spu_instruction.h"
 
-#ifdef DEBUG_INSTRUCTIONS
-#define INSTR_DEBUG_LOG(...) eprintf(__VA_ARGS__)
-#else
-#define INSTR_DEBUG_LOG(...) (void)0
-#endif
-
+#include "ctio.h"
 
 int SPUCtor(struct spu_context *ctx) {
 	assert (ctx);
@@ -59,70 +55,6 @@ int SPULoadBinary(struct spu_context *ctx, const char *filename) {
 
 _CT_EXIT_POINT:
 	return ret;
-}
-
-
-#define S_EXIT (3)
-
-int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction instr) {
-	assert (ctx);
-	assert (instr.opcode.code == DIRECTIVE_OPCODE);
-
-	uint32_t directive_code = 0;
-	instr_get_bitfield(&directive_code, 10, &instr, 0);
-
-	switch (directive_code) {
-		case DUMP_OPCODE:
-			INSTR_DEBUG_LOG("DUMP\n");
-			SPUDump(ctx, stdout);
-			break;
-		case HALT_OPCODE:
-			INSTR_DEBUG_LOG("HALT\n");
-			return S_EXIT;
-		default:
-			INSTR_DEBUG_LOG("Unknown directive instruction: %u\n",
-				directive_code);
-			return S_FAIL;
-	}
-
-	return S_OK;
-}
-
-int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr) {
-	assert (ctx);
-
-	uint32_t num = 0;
-	spu_register_num_t rd = 0;
-	spu_register_num_t rn = 0;
-
-	switch (instr.opcode.code) {
-		case MOV_OPCODE:
-			instr_get_register(&rd, &instr, 0, 1);
-			instr_get_register(&rn, &instr, 4 + 2, 0);
-			INSTR_DEBUG_LOG("MOV rd: <%d>, rn: <%d>\n", rd, rn);
-
-			ctx->registers[rd] = ctx->registers[rn];
-
-			break;
-		case LDR_OPCODE:
-			instr_get_register(&rd, &instr, 0, 1);
-			instr_get_bitfield(&num, 20, &instr, 4);
-
-			INSTR_DEBUG_LOG("LDR rd: <%d>, number: <%u>\n", rd, num);
-
-			num = htole32(num);
-			ctx->registers[rd] = num;
-
-			break;
-		case DIRECTIVE_OPCODE:
-			INSTR_DEBUG_LOG("Directive Instruction\n");
-			return SPUExecuteDirective(ctx, instr);
-		default:
-			INSTR_DEBUG_LOG("Unknown instruction: %d\n", instr.opcode.code);
-			return S_FAIL;
-	}
-
-	return S_OK;
 }
 
 int SPUExecute(struct spu_context *ctx) {

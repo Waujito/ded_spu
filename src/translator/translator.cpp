@@ -93,40 +93,23 @@ static int mov_cmd(struct translating_context *ctx,
 		return S_FAIL;
 	}	
 
-	int ret = 0;
+	int ret = S_OK;
 
 	spu_register_num_t rd = 0;
 	spu_register_num_t rn = 0;
 
-	if ((ret = parse_register(ctx->argsptrs[1])) < 0) {
-		log_error("Error while parsing register <%s>", ctx->argsptrs[1]);
-		return S_FAIL;
-	}
-	rd = (spu_register_num_t)ret;
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
 
-	if ((ret = parse_register(ctx->argsptrs[2])) < 0) {
-		log_error("Error while parsing register <%s>", ctx->argsptrs[2]);
-		return S_FAIL;
-	}
-	rn = (spu_register_num_t)ret;
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_bitfield(0, MOV_RESERVED_FIELD_LEN,
+				instr, FREGISTER_BIT_LEN));
+	_CT_CHECKED(instr_set_register(rn, instr,
+				FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, 0));
 
-	if (raw_cmd(ctx, instr)) {
-		return S_FAIL;
-	}
-	if (instr_set_register(rd, instr, 0, 1)) {
-		log_error("Error while setting register rd");
-		return S_FAIL;
-	}
-	if (instr_set_bitfield(0, 2, instr, 4)) {
-		log_error("Error while setting mov modificator");
-		return S_FAIL;
-	}
-	if (instr_set_register(rn, instr, 4 + 2, 0)) {
-		log_error("Error while setting register rn");
-		return S_FAIL;
-	}
-
-	return S_OK;
+_CT_EXIT_POINT:
+	return ret;
 }
 
 static int ldr_cmd(struct translating_context *ctx,
@@ -137,41 +120,59 @@ static int ldr_cmd(struct translating_context *ctx,
 		return S_FAIL;
 	}
 
-	int ret = 0;
+	int ret = S_OK;
 
 	spu_register_num_t rd = 0;
-
-	if ((ret = parse_register(ctx->argsptrs[1])) < 0) {
-		log_error("Error while parsing register <%s>", ctx->argsptrs[1]);
-		return S_FAIL;
-	}
-	rd = (spu_register_num_t)ret;
-
 	int32_t number = 0;
-	if (parse_literal_number(ctx->argsptrs[2], &number)) {
-		log_error("Error while parsing number <%s>", ctx->argsptrs[2]);
-		return S_FAIL;
-	}
+	uint32_t arg_num = 0;
+
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
+	_CT_CHECKED(parse_literal_number(ctx->argsptrs[2], &number));
 
 	if (number < 0 || number >= (1 << LDR_INTEGER_LEN)) {
 		log_error("number <%s> is too long or negative", ctx->argsptrs[2]);
-		return S_FAIL;
-	}
-	uint32_t arg_num = (uint32_t)number;
-
-	if (raw_cmd(ctx, instr)) {
-		return S_FAIL;
-	}
-	if (instr_set_register(rd, instr, 0, 1)) {
-		log_error("Error while setting register rd");
-		return S_FAIL;
-	}
-	if (instr_set_bitfield(arg_num, LDR_INTEGER_LEN, instr, 4)) {
-		log_error("Error while setting number");
-		return S_FAIL;
+		_CT_FAIL();
 	}
 
-	return S_OK;
+	arg_num = (uint32_t)number;
+
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_bitfield(arg_num, LDR_INTEGER_LEN,
+				instr, FREGISTER_BIT_LEN));
+
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+static int add_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
+	assert (ctx);
+	
+	if (ctx->n_args != 1 + 3) {
+		return S_FAIL;
+	}	
+
+	int ret = S_OK;
+
+	spu_register_num_t rd = 0;
+	spu_register_num_t rl = 0;
+	spu_register_num_t rr = 0;
+
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rl));
+	_CT_CHECKED(parse_register(ctx->argsptrs[3], &rr));
+
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_register(rl, instr,
+				FREGISTER_BIT_LEN, 0));
+	_CT_CHECKED(instr_set_register(rr, instr,
+				FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
+
+_CT_EXIT_POINT:
+	return ret;
 }
 
 static int directive_cmd(struct translating_context *ctx,
@@ -187,8 +188,8 @@ static int directive_cmd(struct translating_context *ctx,
 	unsigned int directive_opcode = ctx->op_data->opcode;
 	assert (opcode <= MAX_DIRECTIVE_OPCODE);
 
-	if (instr_set_bitfield(directive_opcode, 10, instr, 0)) {
-		log_error("Error while directive opcode");
+	if (instr_set_bitfield(directive_opcode, DIRECTIVE_INSTR_BITLEN, instr, 0)) {
+		log_error("Error while setting directive opcode");
 		return S_FAIL;
 	}
 
@@ -198,6 +199,7 @@ static int directive_cmd(struct translating_context *ctx,
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldr",		LDR_OPCODE,	ldr_cmd},
+	{"add",		ADD_OPCODE,	add_cmd},
 	{"dump",	DUMP_OPCODE,	directive_cmd},
 	{"halt",	HALT_OPCODE,	directive_cmd},
 	{0}

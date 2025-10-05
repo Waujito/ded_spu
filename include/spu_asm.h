@@ -61,6 +61,7 @@
  *
  */
 
+#define FREGISTER_BIT_LEN	(4)
 #define REGISTER_BIT_LEN	(5)
 #define N_REGISTERS		(32)
 #define REGISTER_RSP_CODE	(0x1F)
@@ -88,6 +89,7 @@ enum spu_opcodes {
 	 * | 4-bit Rd |  2-bits reserved | Rn - source  |                  |
 	 * |----------|------------------|---------------------------------|
 	 */
+#define MOV_RESERVED_FIELD_LEN (2)
 	MOV_OPCODE	= (0x01),
 
 	/**
@@ -105,6 +107,18 @@ enum spu_opcodes {
 	LDR_OPCODE	= (0x02),
 
 	/**
+	 * rd = rl + rr
+	 *
+	 * Has layout:
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |----------|------------------|---------------|-----------------|
+	 * | 4-bit Rd |     5-bit rl     |     5-bit rr  |                 |
+	 * |----------|------------------|---------------|-----------------|
+	 */
+	ADD_OPCODE	= (0x03),
+
+	/**
 	 * Here are only 64 possible instructions,
 	 * but the processor should support a way more.
 	 *
@@ -120,7 +134,8 @@ enum spu_opcodes {
 	 * |---------------------------|-----------------------------------|
 	 *
 	 */
-	DIRECTIVE_OPCODE= (0x0c),	
+#define DIRECTIVE_INSTR_BITLEN (10)
+	DIRECTIVE_OPCODE= (0x0c),
 };
 
 #define MAX_BASE_OPCODE (0x3F)
