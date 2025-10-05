@@ -64,8 +64,33 @@ _CT_EXIT_POINT:
 
 #define S_EXIT (3)
 
+int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction instr) {
+	assert (ctx);
+	assert (instr.opcode.code == DIRECTIVE_OPCODE);
+
+	uint32_t directive_code = 0;
+	instr_get_bitfield(&directive_code, 10, &instr, 0);
+
+	switch (directive_code) {
+		case DUMP_OPCODE:
+			INSTR_DEBUG_LOG("DUMP\n");
+			SPUDump(ctx, stdout);
+			break;
+		case HALT_OPCODE:
+			INSTR_DEBUG_LOG("HALT\n");
+			return S_EXIT;
+		default:
+			INSTR_DEBUG_LOG("Unknown directive instruction: %u\n",
+				directive_code);
+			return S_FAIL;
+	}
+
+	return S_OK;
+}
+
 int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr) {
 	assert (ctx);
+
 	uint32_t num = 0;
 	spu_register_num_t rd = 0;
 	spu_register_num_t rn = 0;
@@ -89,13 +114,9 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 			ctx->registers[rd] = num;
 
 			break;
-		case DUMP_OPCODE:
-			INSTR_DEBUG_LOG("DUMP\n");
-			SPUDump(ctx, stdout);
-			break;
-		case HALT_OPCODE:
-			INSTR_DEBUG_LOG("HALT\n");
-			return S_EXIT;
+		case DIRECTIVE_OPCODE:
+			INSTR_DEBUG_LOG("Directive Instruction\n");
+			return SPUExecuteDirective(ctx, instr);
 		default:
 			INSTR_DEBUG_LOG("Unknown instruction: %d\n", instr.opcode.code);
 			return S_FAIL;

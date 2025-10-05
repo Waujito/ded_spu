@@ -174,11 +174,32 @@ static int ldr_cmd(struct translating_context *ctx,
 	return S_OK;
 }
 
+static int directive_cmd(struct translating_context *ctx,
+			 struct spu_instruction *instr) {
+	assert (ctx);
+	assert (instr);
+
+	unsigned int opcode = DIRECTIVE_OPCODE;
+
+	instr->opcode.code	= opcode;
+	instr->opcode.reserved1 = 0;
+
+	unsigned int directive_opcode = ctx->op_data->opcode;
+	assert (opcode <= MAX_DIRECTIVE_OPCODE);
+
+	if (instr_set_bitfield(directive_opcode, 10, instr, 0)) {
+		log_error("Error while directive opcode");
+		return S_FAIL;
+	}
+
+	return S_OK;
+}
+
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldr",		LDR_OPCODE,	ldr_cmd},
-	{"halt",	HALT_OPCODE,	raw_cmd},
-	{"dump",	DUMP_OPCODE,	raw_cmd},
+	{"dump",	DUMP_OPCODE,	directive_cmd},
+	{"halt",	HALT_OPCODE,	directive_cmd},
 	{0}
 };
 

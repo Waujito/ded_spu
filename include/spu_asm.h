@@ -104,8 +104,23 @@ enum spu_opcodes {
 #define LDR_INTEGER_LEN (20)
 	LDR_OPCODE	= (0x02),
 
-	DUMP_OPCODE	= (0x3E),
-	HALT_OPCODE	= (0x3F),
+	/**
+	 * Here are only 64 possible instructions,
+	 * but the processor should support a way more.
+	 *
+	 * That's may be a problem in the future, so here is a
+	 * workaround: let 63 instructions accept wide argument field (of 24 bits)
+	 * and add a set of directive instructions, with up to 1024 (10 bit field)
+	 * instructions in it. The layout for these instructions:
+	 *
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |---------------------------|-----------------------------------|
+	 * | 10-bit instruction opcode |         14-bit argument           |
+	 * |---------------------------|-----------------------------------|
+	 *
+	 */
+	DIRECTIVE_OPCODE= (0x0c),	
 };
 
 #define MAX_BASE_OPCODE (0x3F)
@@ -137,6 +152,12 @@ struct spu_instruction {
 			uint32_t arg: 24;
 		} __attribute__((packed));
 	};
+};
+
+#define MAX_DIRECTIVE_OPCODE (0x3FF)
+enum spu_directive_opcodes {
+	DUMP_OPCODE	= (0xFE),
+	HALT_OPCODE	= (0xFF),
 };
 
 #endif /* SPU_ASM_H */

@@ -12,6 +12,29 @@
 	printf(__VA_ARGS__);							\
 	printf("\n")
 
+int DisasmDirectiveInstruction(struct spu_context *ctx, struct spu_instruction instr) {
+	assert (ctx);
+	assert (instr.opcode.code == DIRECTIVE_OPCODE);
+
+	uint32_t directive_code = 0;
+	instr_get_bitfield(&directive_code, 10, &instr, 0);
+
+	switch (directive_code) {
+		case DUMP_OPCODE:
+			PRINT_INSTRUCTION_DISASM(instr, "dump");
+			break;
+		case HALT_OPCODE:
+			PRINT_INSTRUCTION_DISASM(instr, "halt");
+			break;
+		default:
+			PRINT_INSTRUCTION_DISASM(instr, "unknown directive : %u",
+				directive_code);
+			return S_FAIL;
+	}
+
+	return S_OK;
+}
+
 int DisasmInstruction(struct spu_context *ctx, struct spu_instruction instr) {
 	assert (ctx);
 
@@ -30,11 +53,8 @@ int DisasmInstruction(struct spu_context *ctx, struct spu_instruction instr) {
 			instr_get_bitfield(&num, 20, &instr, 4);
 			PRINT_INSTRUCTION_DISASM(instr, "ldr r%d $0x%x", rd, num);
 			break;
-		case DUMP_OPCODE:
-			PRINT_INSTRUCTION_DISASM(instr, "dump");
-			break;
-		case HALT_OPCODE:
-			PRINT_INSTRUCTION_DISASM(instr, "halt");
+		case DIRECTIVE_OPCODE:
+			DisasmDirectiveInstruction(ctx, instr);
 			break;
 		default:
 			PRINT_INSTRUCTION_DISASM(instr, "Unknown %d", instr.opcode.code);
