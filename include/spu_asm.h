@@ -117,6 +117,7 @@ enum spu_opcodes {
 	 * |----------|------------------|---------------|-----------------|
 	 */
 	ADD_OPCODE	= (0x03),
+	MUL_OPCODE	= (0x04),
 
 	/**
 	 * Here are only 64 possible instructions,

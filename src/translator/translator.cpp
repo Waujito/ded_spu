@@ -146,7 +146,8 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static int add_cmd(struct translating_context *ctx,
+// 4-bit rd, 5-bit rl, 5-bit rr
+static int triple_reg_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
 	assert (ctx);
 	
@@ -199,7 +200,8 @@ static int directive_cmd(struct translating_context *ctx,
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldr",		LDR_OPCODE,	ldr_cmd},
-	{"add",		ADD_OPCODE,	add_cmd},
+	{"add",		ADD_OPCODE,	triple_reg_cmd},
+	{"mul",		MUL_OPCODE,	triple_reg_cmd},
 	{"dump",	DUMP_OPCODE,	directive_cmd},
 	{"halt",	HALT_OPCODE,	directive_cmd},
 	{0}
