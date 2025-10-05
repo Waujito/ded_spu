@@ -4,6 +4,8 @@
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
+#include <math.h>
+
 /**
  * The file is not marked with guard defines
  * since it should be used directly in cpp files
@@ -146,6 +148,22 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 #undef TRIPLE_ARG_READ__
 
 
+		case SQRT_OPCODE:
+			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(instr_get_register(&rn, &instr,
+					FREGISTER_BIT_LEN, 0));
+
+			INSTR_LOG(instr, "sqrt r%d r%d", rd, rn);
+
+			{
+				int64_t inum = *(int64_t *)(ctx->registers + rn);
+				double d = (double)inum;
+				d = sqrt(d);
+				inum = (int64_t)d;
+				ctx->registers[rd] = *(uint64_t *)&inum;
+			}
+
+			break;
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM
 			return DisasmDirectiveInstruction(ctx, instr);

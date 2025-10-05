@@ -16,6 +16,7 @@ static inline int is_comment_string(char *arg) {
 	char *comment_ptr = strchr(arg, ';');
 	if (comment_ptr) {
 		*comment_ptr = '\0';
+		return 1;
 	}
 
 	return 0;
@@ -41,8 +42,9 @@ static ssize_t tokenize_opcodeline(char *lineptr, char *argsptrs[MAX_INSTR_ARGS]
 		argsptrs[n_args] = subtoken;
 
 		if (is_comment_string(subtoken)) {
-			if (*subtoken != '\0')
+			if (*subtoken != '\0') {
 				n_args++;
+			}
 
 			break;
 		}
@@ -150,10 +152,10 @@ _CT_EXIT_POINT:
 static int triple_reg_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
 	assert (ctx);
-	
+
 	if (ctx->n_args != 1 + 3) {
 		return S_FAIL;
-	}	
+	}
 
 	int ret = S_OK;
 
@@ -171,6 +173,31 @@ static int triple_reg_cmd(struct translating_context *ctx,
 				FREGISTER_BIT_LEN, 0));
 	_CT_CHECKED(instr_set_register(rr, instr,
 				FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+static int unary_op_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
+	assert (ctx);
+
+	if (ctx->n_args != 1 + 2) {
+		return S_FAIL;
+	}
+
+	int ret = S_OK;
+
+	spu_register_num_t rd = 0;
+	spu_register_num_t rn = 0;
+
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
+
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_register(rn, instr,
+				FREGISTER_BIT_LEN, 0));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -205,6 +232,7 @@ const static struct op_cmd op_data[] = {
 	{"sub",		SUB_OPCODE,	triple_reg_cmd},
 	{"div",		DIV_OPCODE,	triple_reg_cmd},
 	{"mod",		MOD_OPCODE,	triple_reg_cmd},
+	{"sqrt",	SQRT_OPCODE,	unary_op_cmd},
 	{"dump",	DUMP_OPCODE,	directive_cmd},
 	{"halt",	HALT_OPCODE,	directive_cmd},
 	{0}

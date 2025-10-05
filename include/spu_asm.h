@@ -108,7 +108,7 @@ enum spu_opcodes {
 
 	/**
 	 * Triple-register commands goes below. The syntax:
-	 * rd = rl (op) rr
+	 * rd = op( rl, rr )
 	 *
 	 * Has layout:
 	 * |---------------------------------------------------------------|
@@ -123,6 +123,21 @@ enum spu_opcodes {
 	// Integer division
 	DIV_OPCODE	= (0x06),
 	MOD_OPCODE	= (0x07),
+
+	/**
+	 * Unary operations on one register.
+	 * Accepts two registers: rd = op( rn )
+	 *
+	 * Has layout:
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |----------|------------------|---------------------------------|
+	 * | 4-bit Rd |     5-bit Rn     |                                 |
+	 * |----------|------------------|---------------------------------|
+	 *
+	 */
+	// Integer square root
+	SQRT_OPCODE	= (0x08),
 
 	/**
 	 * Here are only 64 possible instructions,
