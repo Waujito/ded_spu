@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "spu.h"
+#include "spu_asm.h"
 #include "spu_bit_ops.h"
 
 uint32_t get_instr_arg(const struct spu_instruction *instr) {

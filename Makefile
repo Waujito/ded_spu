@@ -33,7 +33,7 @@ TESTSRC := test/test_bit_ops.cpp
 TESTOBJ := $(TESTSRC:%.cpp=$(BUILD_DIR)/%.o)
 TEST_LIB_APP := $(BUILD_DIR)/test_spu
 
-SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp
+SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp src/spu_lib/spu.cpp
 SPULIB_OBJ := $(SPULIB_SRC:%.cpp=$(BUILD_DIR)/%.o)
 SPULIB_STATIC := $(BUILD_DIR)/spulib.a
 
@@ -41,7 +41,7 @@ TRANSLATOR_SRC := src/translator/translator.cpp# src/translator/address.cpp
 TRANSLATOR_OBJ := $(TRANSLATOR_SRC:%.cpp=$(BUILD_DIR)/%.o)
 TRANSLATOR_APP := $(BUILD_DIR)/translator
 
-SPU_SRC := src/spu/spu.cpp
+SPU_SRC := src/spu/spu_runner.cpp
 SPU_OBJ := $(SPU_SRC:%.cpp=$(BUILD_DIR)/%.o)
 SPU_APP := $(BUILD_DIR)/spu
 
@@ -89,10 +89,10 @@ $(SPULIB_STATIC): $(SPULIB_OBJ)
 
 ifdef USE_GTEST
 $(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ) $(SPULIB_STATIC)
-	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(STATIC_LIB) $(SPULIB_STATIC) -lgtest_main -lgtest -o $(TEST_LIB_APP)
+	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(SPULIB_STATIC) $(STATIC_LIB) -lgtest_main -lgtest -o $(TEST_LIB_APP)
 else
 $(TEST_LIB_APP): $(STATIC_LIB) $(TESTOBJ) $(TESTLIBOBJ) $(SPULIB_STATIC)
-	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(TESTLIBOBJ) $(STATIC_LIB) $(SPULIB_STATIC) -o $(TEST_LIB_APP)
+	$(CXX) $(FLAGS) $(LDFLAGS) $(TESTOBJ) $(TESTLIBOBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $(TEST_LIB_APP)
 endif
 
 
@@ -103,10 +103,10 @@ test: build_test
 	./$(TEST_LIB_APP)
 
 $(TRANSLATOR_APP): $(TRANSLATOR_OBJ) $(STATIC_LIB) $(SPULIB_STATIC)
-	$(CXX) $(FLAGS) $(LDFLAGS) $(TRANSLATOR_OBJ) $(STATIC_LIB) $(SPULIB_STATIC) -o $@ 
+	$(CXX) $(FLAGS) $(LDFLAGS) $(TRANSLATOR_OBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $@ 
 
 $(SPU_APP): $(SPU_OBJ) $(STATIC_LIB) $(SPULIB_STATIC)
-	$(CXX) $(FLAGS) $(LDFLAGS) $(SPU_OBJ) $(STATIC_LIB) $(SPULIB_STATIC) -o $@
+	$(CXX) $(FLAGS) $(LDFLAGS) $(SPU_OBJ) $(SPULIB_STATIC) $(STATIC_LIB) -o $@
 
 document: objdirs
 	doxygen doxygen.conf

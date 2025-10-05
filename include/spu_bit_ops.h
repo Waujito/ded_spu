@@ -1,7 +1,7 @@
 #ifndef SPU_BIT_OPS_H
 #define SPU_BIT_OPS_H
 
-#include "spu.h"
+#include "spu_asm.h"
 
 
 uint32_t get_instr_arg(const struct spu_instruction *instr);
