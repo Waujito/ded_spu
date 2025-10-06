@@ -74,10 +74,7 @@ typedef uint32_t	spu_instruction_t;
 typedef uint8_t		spu_register_num_t;
 typedef uint64_t	spu_data_t;
 
-/**
- * Stack under the spu:
- * The stack is abstracted out with 
- */
+#define LABEL_MAX_LEN (64)
 
 // The opcode number is 6-bit field up to 2^6 = 64
 // The highest possible number is 0b111111 = 0x3F

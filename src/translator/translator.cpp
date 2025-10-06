@@ -5,6 +5,7 @@
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 #include "translator_parsers.h"
+#include "pvector.h"
 
 #ifdef _DEBUG
 #define T_DEBUG
@@ -67,12 +68,79 @@ struct op_cmd {
 	op_parsing_fn disasm_fun;
 };
 
+struct label_instance {
+	char label[LABEL_MAX_LEN];
+	size_t instruction_ptr;
+};
+
 struct translating_context {
 	char **argsptrs;
 	size_t n_args;
+	size_t n_instruction;
 	FILE *out_stream;
+	pvector labels_table;
 	const struct op_cmd *op_data;
 };
+
+static struct label_instance *find_label(struct translating_context *ctx,
+					 const char *label_name) {
+	assert (label_name);
+
+	for (size_t i = 0; i < ctx->labels_table.len; i++) {
+		struct label_instance *flabel = NULL;
+		if (pvector_get(&(ctx->labels_table), i, (void **)&flabel)) {
+			return NULL;
+		}
+
+		if (!strcmp(flabel->label, label_name)) {
+			return flabel;
+		}
+	}
+
+	return NULL;
+}
+
+static int process_label(struct translating_context *ctx) {
+	assert (ctx);
+
+	int ret = S_OK;
+	char *label_name = ctx->argsptrs[0];
+	size_t label_len = strlen(label_name);
+	struct label_instance label = {{0}};
+
+	if (	ctx->n_args != 1 || 
+		*label_name != '.' || 
+		label_len < 3 ||
+		label_name[label_len - 1] != ':') {
+		log_error("Invalid label: %s", label_name);
+		_CT_FAIL();
+	}
+
+	label_name[label_len - 1] = '\0';
+	label_len--;
+
+	if (label_len > LABEL_MAX_LEN) {
+		log_error("Label %s is too long: maximum size is %d",
+			label_name, LABEL_MAX_LEN);
+		_CT_FAIL();
+	}
+
+	if (find_label(ctx, label_name)) {
+		log_error("Label %s is already used", label_name);
+		_CT_FAIL();
+	}
+
+	memcpy(label.label, label_name, label_len);
+	label.instruction_ptr = ctx->n_instruction;
+
+	if (pvector_push_back(&ctx->labels_table, &label)) {
+		_CT_FAIL();
+	}
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
 
 static int raw_cmd(struct translating_context *ctx, struct spu_instruction *instr) {
 	assert (ctx);
@@ -179,17 +247,37 @@ static int jmp_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	int32_t number = 0;
+	char *jmp_str = ctx->argsptrs[1];
+
 	uint32_t arg_num = 0;
 
-	_CT_CHECKED(parse_literal_number(ctx->argsptrs[1], &number));
+	if (*jmp_str == '.') {
+		struct label_instance *label_inst = find_label(ctx, jmp_str);
+		if (!label_inst) {
+			log_error("Label not found: %s", jmp_str);
+			_CT_FAIL();
+		}
 
-	if (number < -(1 << 23) || number >= (1 << 23)) {
-		log_error("number <%s> is too long", ctx->argsptrs[2]);
+		int32_t absolute_ptr = (int32_t)label_inst->instruction_ptr;
+		int32_t current_ptr = (int32_t)ctx->n_instruction;
+		int32_t relative_ptr = absolute_ptr - current_ptr - 1;
+
+		arg_num = (uint32_t)relative_ptr;
+	} else if (*jmp_str == '$') {
+		int32_t number = 0;
+
+		_CT_CHECKED(parse_literal_number(jmp_str, &number));
+
+		if (number < -(1 << 23) || number >= (1 << 23)) {
+			log_error("number <%s> is too long", ctx->argsptrs[2]);
+			_CT_FAIL();
+		}
+
+
+		arg_num = (uint32_t)number;
+	} else {
 		_CT_FAIL();
-	}
-
-	arg_num = (uint32_t)number;
+	}	
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
 	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
@@ -304,6 +392,14 @@ static int parse_op(struct translating_context *ctx,
 	
 	char *cmd = ctx->argsptrs[0];
 
+	if (*cmd == '.') {
+		if (process_label(ctx)) {
+			return S_FAIL;
+		}
+
+		return S_EMPTY_INSTR;
+	}
+
 	const struct op_cmd *op_cmd_ptr = op_data;
 	while (op_cmd_ptr->cmd_name != NULL) {
 		if (!strcmp(cmd, op_cmd_ptr->cmd_name)) {
@@ -331,9 +427,13 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 	struct translating_context ctx = {
 		.argsptrs = NULL,
 		.n_args = 0,
+		.n_instruction = 0,
 		.out_stream = out_stream,
+		.labels_table = {0},
 		.op_data = NULL,
 	};
+
+	pvector_init(&ctx.labels_table, sizeof(struct label_instance));
 
 	while ((nread = getline(&lineptr, &linesz, stdin)) != -1) {
 		char *argsptrs[MAX_INSTR_ARGS];
@@ -355,6 +455,7 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 		}
 
 		if (ret != S_EMPTY_INSTR) {
+			ctx.n_instruction++;
 #ifdef T_DEBUG
 			eprintf("Writing instruction: <0x");
 			buf_dump_hex(&instr, sizeof (instr), stderr);
@@ -370,6 +471,9 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 _CT_EXIT_POINT:
 	free (lineptr);
 	fflush (out_stream);
+
+	pvector_destroy(&ctx.labels_table);
+
 	return ret;
 }
 
