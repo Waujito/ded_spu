@@ -110,21 +110,7 @@ enum spu_opcodes {
 	 * |----------|----------------------------------------------------|
 	 */
 #define LDC_INTEGER_LEN (20)
-	LDC_OPCODE	= (0x02),
-	
-	/**
-	 * Single register operations.
-	 *
-	 * Has layout:
-	 * |---------------------------------------------------------------|
-	 * |                          3 bytes                              |
-	 * |----------|----------------------------------------------------|
-	 * | 4-bit Rd |                                                    |
-	 * |----------|----------------------------------------------------|
-	 *
-	 */
-	PUSHR_OPCODE	= (0x20),
-	POPR_OPCODE	= (0x21),
+	LDC_OPCODE	= (0x02),	
 
 	/**
 	 * Here are only 64 possible instructions,
@@ -211,6 +197,20 @@ enum spu_directive_opcodes {
 	 */
 	// Integer square root
 	SQRT_OPCODE	= (0x08),
+
+	/**
+	 * Single register operations.
+	 *
+	 * Has layout:
+	 * |---------------------|
+	 * |       14 bits       |
+	 * |----------|----------|
+	 * | 4-bit Rd |          |
+	 * |----------|----------|
+	 *
+	 */
+	PUSHR_OPCODE	= (0x20),
+	POPR_OPCODE	= (0x21),
 
 	DUMP_OPCODE	= (0xFE),
 	HALT_OPCODE	= (0xFF),

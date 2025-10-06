@@ -189,12 +189,10 @@ static int triple_reg_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[3], &rr));
 
 	_CT_CHECKED(directive_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr,
-		DIRECTIVE_INSTR_BITLEN, 1));
-	_CT_CHECKED(instr_set_register(rl, instr,
-		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));
-	_CT_CHECKED(instr_set_register(rr, instr,
-		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
+	_CT_CHECKED(directive_set_register(rd, instr,0, 1));
+	_CT_CHECKED(directive_set_register(rl, instr, FREGISTER_BIT_LEN, 0));
+	_CT_CHECKED(directive_set_register(rr, instr,
+				    FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -217,10 +215,8 @@ static int unary_op_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
 
 	_CT_CHECKED(directive_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr, 
-		DIRECTIVE_INSTR_BITLEN, 1));
-	_CT_CHECKED(instr_set_register(rn, instr,
-		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));
+	_CT_CHECKED(directive_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(directive_set_register(rn, instr, FREGISTER_BIT_LEN, 0));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -240,8 +236,8 @@ static int single_reg_cmd(struct translating_context *ctx,
 
 	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rn));
 
-	_CT_CHECKED(raw_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rn, instr, 0, 1));
+	_CT_CHECKED(directive_cmd(ctx, instr));
+	_CT_CHECKED(directive_set_register(rn, instr, 0, 1));
 
 _CT_EXIT_POINT:
 	return ret;
