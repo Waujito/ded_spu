@@ -73,6 +73,11 @@
 typedef uint32_t	spu_instruction_t;
 typedef uint8_t		spu_register_num_t;
 
+/**
+ * Stack under the spu:
+ * The stack is abstracted out with 
+ */
+
 // The opcode number is 6-bit field up to 2^6 = 64
 // The highest possible number is 0b111111 = 0x3F
 enum spu_opcodes {
@@ -156,7 +161,7 @@ enum spu_opcodes {
 	 *
 	 */
 #define DIRECTIVE_INSTR_BITLEN (10)
-	DIRECTIVE_OPCODE= (0x0c),
+	DIRECTIVE_OPCODE= (0x3e),
 };
 
 #define MAX_BASE_OPCODE (0x3F)
