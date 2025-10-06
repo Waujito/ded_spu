@@ -87,6 +87,27 @@ static int raw_cmd(struct translating_context *ctx, struct spu_instruction *inst
 	return S_OK;
 }
 
+static int directive_cmd(struct translating_context *ctx,
+			 struct spu_instruction *instr) {
+	assert (ctx);
+	assert (instr);
+
+	unsigned int opcode = DIRECTIVE_OPCODE;
+
+	instr->opcode.code	= opcode;
+	instr->opcode.reserved1 = 0;
+
+	unsigned int directive_opcode = ctx->op_data->opcode;
+	assert (opcode <= MAX_DIRECTIVE_OPCODE);
+
+	if (instr_set_bitfield(directive_opcode, DIRECTIVE_INSTR_BITLEN, instr, 0)) {
+		log_error("Error while setting directive opcode");
+		return S_FAIL;
+	}
+
+	return S_OK;
+}
+
 static int mov_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
 	assert (ctx);
@@ -167,12 +188,13 @@ static int triple_reg_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rl));
 	_CT_CHECKED(parse_register(ctx->argsptrs[3], &rr));
 
-	_CT_CHECKED(raw_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(directive_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr,
+		DIRECTIVE_INSTR_BITLEN, 1));
 	_CT_CHECKED(instr_set_register(rl, instr,
-				FREGISTER_BIT_LEN, 0));
+		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));
 	_CT_CHECKED(instr_set_register(rr, instr,
-				FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
+		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -194,39 +216,42 @@ static int unary_op_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
 	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
 
-	_CT_CHECKED(raw_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(directive_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rd, instr, 
+		DIRECTIVE_INSTR_BITLEN, 1));
 	_CT_CHECKED(instr_set_register(rn, instr,
-				FREGISTER_BIT_LEN, 0));
+		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));
 
 _CT_EXIT_POINT:
 	return ret;
 }
 
-static int directive_cmd(struct translating_context *ctx,
-			 struct spu_instruction *instr) {
+static int single_reg_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
 	assert (ctx);
-	assert (instr);
 
-	unsigned int opcode = DIRECTIVE_OPCODE;
-
-	instr->opcode.code	= opcode;
-	instr->opcode.reserved1 = 0;
-
-	unsigned int directive_opcode = ctx->op_data->opcode;
-	assert (opcode <= MAX_DIRECTIVE_OPCODE);
-
-	if (instr_set_bitfield(directive_opcode, DIRECTIVE_INSTR_BITLEN, instr, 0)) {
-		log_error("Error while setting directive opcode");
+	if (ctx->n_args != 1 + 1) {
 		return S_FAIL;
 	}
 
-	return S_OK;
+	int ret = S_OK;
+
+	spu_register_num_t rn = 0;
+
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rn));
+
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(rn, instr, 0, 1));
+
+_CT_EXIT_POINT:
+	return ret;
 }
 
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldc",		LDC_OPCODE,	ldc_cmd},
+	{"pushr",	PUSHR_OPCODE,	single_reg_cmd},
+	{"popr",	POPR_OPCODE,	single_reg_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
 	{"mul",		MUL_OPCODE,	triple_reg_cmd},
 	{"sub",		SUB_OPCODE,	triple_reg_cmd},

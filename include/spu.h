@@ -2,12 +2,14 @@
 #define SPU_H
 
 #include "spu_asm.h"
+#include "pvector.h"
 
 struct spu_context {
-	uint64_t registers[N_REGISTERS];
+	spu_data_t registers[N_REGISTERS];
 	spu_instruction_t *instr_buf;
 	size_t instr_bufsize;
-	size_t ip; 
+	size_t ip;
+	pvector stack;
 };
 
 

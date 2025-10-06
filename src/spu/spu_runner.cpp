@@ -21,7 +21,7 @@ _CT_EXIT_POINT:
 }
 
 int main(int argc, const char *argv[]) {
-	const char *binary_filename = "uwu.o";
+	const char *binary_filename = "example.o";
 
 	if (argc < 2) {
 	} else if (argc == 2) {

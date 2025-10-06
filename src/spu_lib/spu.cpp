@@ -21,8 +21,13 @@ int SPUCtor(struct spu_context *ctx) {
 		.registers = {0},
 		.instr_buf = NULL,
 		.instr_bufsize = 0,
-		.ip = 0
+		.ip = 0,
+		.stack = {0}
 	};
+
+	if (pvector_init(&ctx->stack, sizeof(spu_data_t))) {
+		return S_FAIL;
+	}
 
 	return S_OK;
 }
@@ -33,6 +38,8 @@ int SPUDtor(struct spu_context *ctx) {
 	free (ctx->instr_buf);
 	ctx->instr_buf = NULL;
 	ctx->instr_bufsize = 0;
+
+	pvector_destroy(&ctx->stack);
 
 	return S_OK;
 }
@@ -99,6 +106,9 @@ int SPUDump(struct spu_context *ctx, FILE *out_stream) {
 	DPRINT(	">\n");
 
 	DPRINT("ip:\t<%lx>\n", ctx->ip);
+
+	DPRINT("\nStack dump:\n");
+	pvector_dump(&ctx->stack, out_stream);
 
 	DPRINT("\n}\n\n");
 

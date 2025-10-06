@@ -56,10 +56,65 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 	assert (ctx);
 	assert (instr.opcode.code == DIRECTIVE_OPCODE);
 
+	int ret = S_OK;
+
 	uint32_t directive_code = 0;
+	spu_register_num_t rd = 0;
+	spu_register_num_t rn = 0;
+	spu_register_num_t rl = 0;
+	spu_register_num_t rr = 0;
+
 	instr_get_bitfield(&directive_code, 10, &instr, 0);
 
 	switch (directive_code) {
+#define TRIPLE_REG_READ__(instr_name)						    \
+	_CT_CHECKED(instr_get_register(&rd, &instr,				    \
+		DIRECTIVE_INSTR_BITLEN, 1));					    \
+	_CT_CHECKED(instr_get_register(&rl, &instr,				    \
+		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));		    \
+	_CT_CHECKED(instr_get_register(&rr, &instr,				    \
+		DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0)); \
+	INSTR_LOG(instr, instr_name " r%d r%d r%d", rd, rl, rr)
+
+		case ADD_OPCODE:
+			TRIPLE_REG_READ__("add");
+			ctx->registers[rd] = ctx->registers[rl] + ctx->registers[rr];
+			break;
+		case MUL_OPCODE:
+			TRIPLE_REG_READ__("mul");
+			ctx->registers[rd] = ctx->registers[rl] * ctx->registers[rr];
+			break;
+		case SUB_OPCODE:
+			TRIPLE_REG_READ__("sub");
+			ctx->registers[rd] = ctx->registers[rl] - ctx->registers[rr];
+			break;
+		case DIV_OPCODE:
+			TRIPLE_REG_READ__("div");
+			ctx->registers[rd] = ctx->registers[rl] / ctx->registers[rr];
+			break;
+		case MOD_OPCODE:
+			TRIPLE_REG_READ__("mod");
+			ctx->registers[rd] = ctx->registers[rl] % ctx->registers[rr];
+			break;
+#undef TRIPLE_ARG_READ__
+
+		case SQRT_OPCODE:
+			_CT_CHECKED(instr_get_register(&rd, &instr, 
+				DIRECTIVE_INSTR_BITLEN, 1));
+			_CT_CHECKED(instr_get_register(&rn, &instr,
+				DIRECTIVE_INSTR_BITLEN + FREGISTER_BIT_LEN, 0));
+
+			INSTR_LOG(instr, "sqrt r%d r%d", rd, rn);
+
+			{
+				int64_t inum = *(int64_t *)(ctx->registers + rn);
+				double d = (double)inum;
+				d = sqrt(d);
+				inum = (int64_t)d;
+				ctx->registers[rd] = *(uint64_t *)&inum;
+			}
+
+			break;
 		case DUMP_OPCODE:
 			INSTR_LOG(instr, "dump");
 			SPUDump(ctx, stdout);
@@ -73,7 +128,8 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			return S_FAIL;
 	}
 
-	return S_OK;
+_CT_EXIT_POINT:
+	return ret;
 }
 
 #ifdef SPU_INSTR_MODE_DISASM
@@ -115,54 +171,22 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			ctx->registers[rd] = num;
 
 			break;
-
-
-#define TRIPLE_REG_READ__(instr_name)					\
-	_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));		\
-	_CT_CHECKED(instr_get_register(&rl, &instr,			\
-		  FREGISTER_BIT_LEN, 0));				\
-	_CT_CHECKED(instr_get_register(&rr, &instr,			\
-		  FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));		\
-	INSTR_LOG(instr, instr_name " r%d r%d r%d", rd, rl, rr)
-
-		case ADD_OPCODE:
-			TRIPLE_REG_READ__("add");
-			ctx->registers[rd] = ctx->registers[rl] + ctx->registers[rr];
-			break;
-		case MUL_OPCODE:
-			TRIPLE_REG_READ__("mul");
-			ctx->registers[rd] = ctx->registers[rl] * ctx->registers[rr];
-			break;
-		case SUB_OPCODE:
-			TRIPLE_REG_READ__("sub");
-			ctx->registers[rd] = ctx->registers[rl] - ctx->registers[rr];
-			break;
-		case DIV_OPCODE:
-			TRIPLE_REG_READ__("div");
-			ctx->registers[rd] = ctx->registers[rl] / ctx->registers[rr];
-			break;
-		case MOD_OPCODE:
-			TRIPLE_REG_READ__("mod");
-			ctx->registers[rd] = ctx->registers[rl] % ctx->registers[rr];
-			break;
-#undef TRIPLE_ARG_READ__
-
-
-		case SQRT_OPCODE:
+		case PUSHR_OPCODE:
 			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_register(&rn, &instr,
-					FREGISTER_BIT_LEN, 0));
 
-			INSTR_LOG(instr, "sqrt r%d r%d", rd, rn);
+			INSTR_LOG(instr, "pushr r%d", rd);
 
-			{
-				int64_t inum = *(int64_t *)(ctx->registers + rn);
-				double d = (double)inum;
-				d = sqrt(d);
-				inum = (int64_t)d;
-				ctx->registers[rd] = *(uint64_t *)&inum;
-			}
+			if (pvector_push_back(&ctx->stack, &(ctx->registers[rd])))
+				_CT_FAIL();
 
+			break;
+		case POPR_OPCODE:
+			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
+
+			INSTR_LOG(instr, "popr r%d", rd);
+
+			if (pvector_pop_back(&ctx->stack, &(ctx->registers[rd])))
+				_CT_FAIL();
 			break;
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM

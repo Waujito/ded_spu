@@ -72,6 +72,7 @@
 
 typedef uint32_t	spu_instruction_t;
 typedef uint8_t		spu_register_num_t;
+typedef uint64_t	spu_data_t;
 
 /**
  * Stack under the spu:
@@ -104,45 +105,26 @@ enum spu_opcodes {
 	 * Has layout:
 	 * |---------------------------------------------------------------|
 	 * |                          3 bytes                              |
-	 * |----------|------------------|---------------------------------|
+	 * |----------|----------------------------------------------------|
 	 * | 4-bit Rd |            20-bit integer number                   |
-	 * |----------|------------------|---------------------------------|
+	 * |----------|----------------------------------------------------|
 	 */
 #define LDC_INTEGER_LEN (20)
 	LDC_OPCODE	= (0x02),
-
+	
 	/**
-	 * Triple-register commands goes below. The syntax:
-	 * rd = op( rl, rr )
+	 * Single register operations.
 	 *
 	 * Has layout:
 	 * |---------------------------------------------------------------|
 	 * |                          3 bytes                              |
-	 * |----------|------------------|---------------|-----------------|
-	 * | 4-bit Rd |     5-bit rl     |     5-bit rr  |                 |
-	 * |----------|------------------|---------------|-----------------|
-	 */
-	ADD_OPCODE	= (0x03),
-	MUL_OPCODE	= (0x04),
-	SUB_OPCODE	= (0x05),
-	// Integer division
-	DIV_OPCODE	= (0x06),
-	MOD_OPCODE	= (0x07),
-
-	/**
-	 * Unary operations on one register.
-	 * Accepts two registers: rd = op( rn )
-	 *
-	 * Has layout:
-	 * |---------------------------------------------------------------|
-	 * |                          3 bytes                              |
-	 * |----------|------------------|---------------------------------|
-	 * | 4-bit Rd |     5-bit Rn     |                                 |
-	 * |----------|------------------|---------------------------------|
+	 * |----------|----------------------------------------------------|
+	 * | 4-bit Rd |                                                    |
+	 * |----------|----------------------------------------------------|
 	 *
 	 */
-	// Integer square root
-	SQRT_OPCODE	= (0x08),
+	PUSHR_OPCODE	= (0x20),
+	POPR_OPCODE	= (0x21),
 
 	/**
 	 * Here are only 64 possible instructions,
@@ -197,6 +179,39 @@ struct spu_instruction {
 
 #define MAX_DIRECTIVE_OPCODE (0x3FF)
 enum spu_directive_opcodes {
+	/**
+	 * Triple-register commands goes below. The syntax:
+	 * rd = op( rl, rr )
+	 *
+	 * Has layout:
+	 * |---------------------------------------------|
+	 * |                 14 bits                     |
+	 * |----------|------------------|---------------|
+	 * | 4-bit Rd |     5-bit rl     |     5-bit rr  |
+	 * |----------|------------------|---------------|
+	 */
+	ADD_OPCODE	= (0x01),
+	MUL_OPCODE	= (0x02),
+	SUB_OPCODE	= (0x03),
+	// Integer division
+	DIV_OPCODE	= (0x04),
+	MOD_OPCODE	= (0x05),
+
+	/**
+	 * Unary operations on one register.
+	 * Accepts two registers: rd = op( rn )
+	 *
+	 * Has layout:
+	 * |-----------------------------|
+	 * |            14 bits          |
+	 * |----------|------------|-----|
+	 * | 4-bit Rd |  5-bit Rn  |     |
+	 * |----------|------------|-----|
+	 *
+	 */
+	// Integer square root
+	SQRT_OPCODE	= (0x08),
+
 	DUMP_OPCODE	= (0xFE),
 	HALT_OPCODE	= (0xFF),
 };
