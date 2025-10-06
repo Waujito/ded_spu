@@ -113,6 +113,19 @@ enum spu_opcodes {
 	LDC_OPCODE	= (0x02),	
 
 	/**
+	 * Jump instructions
+	 *
+	 * Has layout:
+	 * |---------------------------------------------------------------|
+	 * |                          3 bytes                              |
+	 * |---------------------------------------------------------------|
+	 * |                   24-bit integer number                       |
+	 * |---------------------------------------------------------------|
+	 */
+#define JMP_INTEGER_BLEN (24)
+	JMP_OPCODE	= (0x03),
+
+	/**
 	 * Here are only 64 possible instructions,
 	 * but the processor should support a way more.
 	 *

@@ -11,9 +11,12 @@ static int run_spu(const char *in_filename) {
 	_CT_CHECKED(SPULoadBinary(&ctx, in_filename));
 
 	if ((ret = SPUExecute(&ctx))) {
-		log_error("The program exited with non-zero exit code: <%d>", ret);
+		SPUDump(&ctx, stderr);
+
+		log_error("[CORE DUMPED] The program exited with non-zero exit code: <%d>", ret);
 		ret = S_OK;
 	}
+
 
 _CT_EXIT_POINT:
 	SPUDtor(&ctx);

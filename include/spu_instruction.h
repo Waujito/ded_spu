@@ -67,6 +67,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 	instr_get_bitfield(&directive_code, 10, &instr, 0);
 
 	switch (directive_code) {
+
 #define TRIPLE_REG_READ__(instr_name)						\
 	_CT_CHECKED(directive_get_register(&rd, &instr,	0, 1));			\
 	_CT_CHECKED(directive_get_register(&rl, &instr, FREGISTER_BIT_LEN, 0));	\
@@ -160,6 +161,8 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 	int ret = S_OK;
 
 	uint32_t num = 0;
+	int32_t dnum = 0;
+
 	spu_register_num_t rd = 0;
 	spu_register_num_t rn = 0;
 	spu_register_num_t rl = 0;
@@ -186,7 +189,28 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			num = htole32(num);
 			ctx->registers[rd] = num;
 
-			break;	
+			break;
+		case JMP_OPCODE:
+			_CT_CHECKED(instr_get_bitfield(&num, JMP_INTEGER_BLEN,
+					&instr, 0));
+
+			num <<= sizeof(uint32_t) * 8 - JMP_INTEGER_BLEN;
+			dnum = (int32_t)num;
+			dnum >>= sizeof(uint32_t) * 8 - JMP_INTEGER_BLEN;
+
+			INSTR_LOG(instr, "jmp $%d", dnum);
+
+			if (
+				(dnum < 0 && ctx->ip < (size_t)(-dnum)) ||
+				(dnum > 0 && ctx->ip + (size_t)dnum >= 
+						ctx->instr_bufsize)
+			) {
+				_CT_FAIL();
+			}
+
+			ctx->ip = (size_t)((int64_t)ctx->ip + dnum);
+
+			break;
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM
 			return DisasmDirectiveInstruction(ctx, instr);

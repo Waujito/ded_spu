@@ -169,6 +169,36 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
+static int jmp_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
+	assert (ctx);	
+	
+	if (ctx->n_args != 1 + 1) {
+		return S_FAIL;
+	}
+
+	int ret = S_OK;
+
+	int32_t number = 0;
+	uint32_t arg_num = 0;
+
+	_CT_CHECKED(parse_literal_number(ctx->argsptrs[1], &number));
+
+	if (number < -(1 << 23) || number >= (1 << 23)) {
+		log_error("number <%s> is too long", ctx->argsptrs[2]);
+		_CT_FAIL();
+	}
+
+	arg_num = (uint32_t)number;
+
+	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
+				instr, 0));
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
 // 4-bit rd, 5-bit rl, 5-bit rr
 static int triple_reg_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
@@ -246,6 +276,7 @@ _CT_EXIT_POINT:
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldc",		LDC_OPCODE,	ldc_cmd},
+	{"jmp",		JMP_OPCODE,	jmp_cmd},
 	{"pushr",	PUSHR_OPCODE,	single_reg_cmd},
 	{"popr",	POPR_OPCODE,	single_reg_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
