@@ -93,7 +93,7 @@ enum spu_opcodes {
 	MOV_OPCODE	= (0x01),
 
 	/**
-	 * Load to register instruction.
+	 * Loads the constant to the register.
 	 * Loads the 20-bit integer to the register.
 	 *
 	 * Has layout:
@@ -103,8 +103,8 @@ enum spu_opcodes {
 	 * | 4-bit Rd |            20-bit integer number                   |
 	 * |----------|------------------|---------------------------------|
 	 */
-#define LDR_INTEGER_LEN (20)
-	LDR_OPCODE	= (0x02),
+#define LDC_INTEGER_LEN (20)
+	LDC_OPCODE	= (0x02),
 
 	/**
 	 * Triple-register commands goes below. The syntax:

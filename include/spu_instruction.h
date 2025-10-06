@@ -104,12 +104,12 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			ctx->registers[rd] = ctx->registers[rn];
 
 			break;
-		case LDR_OPCODE:
+		case LDC_OPCODE:
 			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_bitfield(&num, LDR_INTEGER_LEN,
+			_CT_CHECKED(instr_get_bitfield(&num, LDC_INTEGER_LEN,
 					&instr, FREGISTER_BIT_LEN));
 
-			INSTR_LOG(instr, "ldr r%d $0x%x", rd, num);
+			INSTR_LOG(instr, "ldc r%d $0x%x", rd, num);
 
 			num = htole32(num);
 			ctx->registers[rd] = num;

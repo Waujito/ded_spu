@@ -114,7 +114,7 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static int ldr_cmd(struct translating_context *ctx,
+static int ldc_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
 	assert (ctx);	
 	
@@ -131,7 +131,7 @@ static int ldr_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
 	_CT_CHECKED(parse_literal_number(ctx->argsptrs[2], &number));
 
-	if (number < 0 || number >= (1 << LDR_INTEGER_LEN)) {
+	if (number < 0 || number >= (1 << LDC_INTEGER_LEN)) {
 		log_error("number <%s> is too long or negative", ctx->argsptrs[2]);
 		_CT_FAIL();
 	}
@@ -140,7 +140,7 @@ static int ldr_cmd(struct translating_context *ctx,
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
 	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
-	_CT_CHECKED(instr_set_bitfield(arg_num, LDR_INTEGER_LEN,
+	_CT_CHECKED(instr_set_bitfield(arg_num, LDC_INTEGER_LEN,
 				instr, FREGISTER_BIT_LEN));
 
 
@@ -226,7 +226,7 @@ static int directive_cmd(struct translating_context *ctx,
 
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
-	{"ldr",		LDR_OPCODE,	ldr_cmd},
+	{"ldc",		LDC_OPCODE,	ldc_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
 	{"mul",		MUL_OPCODE,	triple_reg_cmd},
 	{"sub",		SUB_OPCODE,	triple_reg_cmd},
