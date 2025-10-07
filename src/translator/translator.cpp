@@ -336,6 +336,7 @@ static int jmp_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_jmp_position(ctx, instr, jmp_str, &arg_num));
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
+	// Written with register, but these are flags
 	_CT_CHECKED(instr_set_register(0, instr, 0, 1));
 	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
 				instr, JMP_INTEGER_OFF));
@@ -424,6 +425,8 @@ const static struct op_cmd op_data[] = {
 	{"jmp",		JMP_OPCODE,	jmp_cmd},
 	{"pushr",	PUSHR_OPCODE,	single_reg_cmd},
 	{"popr",	POPR_OPCODE,	single_reg_cmd},
+	{"input",	INPUT_OPCODE,	single_reg_cmd},
+	{"print",	PRINT_OPCODE,	single_reg_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
 	{"mul",		MUL_OPCODE,	triple_reg_cmd},
 	{"sub",		SUB_OPCODE,	triple_reg_cmd},

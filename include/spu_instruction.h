@@ -131,6 +131,23 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			if (pvector_pop_back(&ctx->stack, &(ctx->registers[rd])))
 				_CT_FAIL();
 			break;
+		case INPUT_OPCODE:
+			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+
+			INSTR_LOG(instr, "input r%d", rd);
+			
+			if (scanf("%ld", (int64_t *)&ctx->registers[rd]) != 1) {
+				_CT_FAIL();
+			}
+
+			break;
+		case PRINT_OPCODE:
+			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+
+			INSTR_LOG(instr, "print r%d", rd);
+
+			printf("%ld\n", (int64_t)(ctx->registers[rd]));
+			break;
 
 		case DUMP_OPCODE:
 			INSTR_LOG(instr, "dump");

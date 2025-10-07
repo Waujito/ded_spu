@@ -223,6 +223,9 @@ enum spu_directive_opcodes {
 	PUSHR_OPCODE	= (0x20),
 	POPR_OPCODE	= (0x21),
 
+	INPUT_OPCODE	= (0x50),
+	PRINT_OPCODE	= (0x51),
+
 	DUMP_OPCODE	= (0xFE),
 	HALT_OPCODE	= (0xFF),
 };
