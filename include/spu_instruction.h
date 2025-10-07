@@ -192,7 +192,7 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			break;
 		case JMP_OPCODE:
 			_CT_CHECKED(instr_get_bitfield(&num, JMP_INTEGER_BLEN,
-					&instr, 0));
+					&instr, JMP_INTEGER_OFF));
 
 			num <<= sizeof(uint32_t) * 8 - JMP_INTEGER_BLEN;
 			dnum = (int32_t)num;

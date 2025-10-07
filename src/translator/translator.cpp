@@ -257,19 +257,16 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static int jmp_cmd(struct translating_context *ctx,
-		   struct spu_instruction *instr) {
-	assert (ctx);	
-	
-	if (ctx->n_args != 1 + 1) {
-		return S_FAIL;
-	}
+static int parse_jmp_position(	struct translating_context *ctx,
+				struct spu_instruction *instr,
+				const char *jmp_str, uint32_t *jmp_arg) {
+	assert (ctx);
+	assert (instr);
 
 	int ret = S_OK;
 
-	char *jmp_str = ctx->argsptrs[1];
-
 	uint32_t arg_num = 0;
+	int32_t relative_jmp = 0;
 
 	if (*jmp_str == '.') {
 		struct label_instance *label_inst = find_label(ctx, jmp_str);
@@ -299,26 +296,49 @@ static int jmp_cmd(struct translating_context *ctx,
 		int32_t current_ptr = (int32_t)ctx->n_instruction;
 		int32_t relative_ptr = absolute_ptr - current_ptr - 1;
 
-		arg_num = (uint32_t)relative_ptr;
+		relative_jmp = relative_ptr;
 	} else if (*jmp_str == '$') {
 		int32_t number = 0;
 
 		_CT_CHECKED(parse_literal_number(jmp_str, &number));
 
-		if (number < -(1 << 23) || number >= (1 << 23)) {
-			log_error("number <%s> is too long", ctx->argsptrs[2]);
-			_CT_FAIL();
-		}
-
-
-		arg_num = (uint32_t)number;
+		relative_jmp = number;
 	} else {
 		_CT_FAIL();
-	}	
+	}
+
+	if (	relative_jmp < -(1 << (JMP_INTEGER_BLEN - 1)) ||
+		relative_jmp >= (1 << (JMP_INTEGER_BLEN - 1))) {
+		log_error("jump number <%d> is too long", relative_jmp);
+		_CT_FAIL();
+	}
+	arg_num = (uint32_t)relative_jmp;
+	
+	*jmp_arg = arg_num;
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+static int jmp_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
+	assert (ctx);	
+	
+	if (ctx->n_args != 1 + 1) {
+		return S_FAIL;
+	}
+
+	char *jmp_str = ctx->argsptrs[1];
+
+	int ret = S_OK;
+
+	uint32_t arg_num = 0;
+	_CT_CHECKED(parse_jmp_position(ctx, instr, jmp_str, &arg_num));
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
+	_CT_CHECKED(instr_set_register(0, instr, 0, 1));
 	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
-				instr, 0));
+				instr, JMP_INTEGER_OFF));
 
 _CT_EXIT_POINT:
 	return ret;
