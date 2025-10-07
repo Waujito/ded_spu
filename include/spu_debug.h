@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Debugging function for SPU
+ */
+
 #ifndef T_DEBUG_H
 #define T_DEBUG_H
 

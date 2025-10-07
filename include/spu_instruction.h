@@ -1,12 +1,8 @@
-#include <assert.h>
-
-#include "spu.h"
-#include "spu_bit_ops.h"
-#include "spu_debug.h"
-
-#include <math.h>
-
 /**
+ * @file
+ *
+ * @brief Configurable file for SPU and Disasm
+ *
  * The file is not marked with guard defines
  * since it should be used directly in cpp files
  * And MUST NEVER duplicate
@@ -20,6 +16,14 @@
  * Pass SPU_INSTR_MODE_DISASM if you want to use it for disassembly.
  *
  */
+
+#include <assert.h>
+
+#include "spu.h"
+#include "spu_bit_ops.h"
+#include "spu_debug.h"
+
+#include <math.h>
 
 #if ! (defined(SPU_INSTR_MODE_EXEC) || defined(SPU_INSTR_MODE_DISASM))
 # error "Configure spu_instruction.h with SPU_INSTR_MODE_EXEC or SPU_INSTR_MODE_DISASM!"

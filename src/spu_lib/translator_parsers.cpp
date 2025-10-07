@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Translating context for SPU
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>

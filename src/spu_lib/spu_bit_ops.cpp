@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Bit operations for SPU
+ */
+
 #include <assert.h>
 
 #include "spu_asm.h"

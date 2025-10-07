@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief SPU - Software Processing Unit
+ */
+
 #include <stdlib.h>
 
 #include "spu.h"

@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Parsers for Translator
+ */
+
 #ifndef TRANSLATOR_PARSERS_H
 #define TRANSLATOR_PARSERS_H
 

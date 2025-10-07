@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Disassembler runner
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief SPU - Software Processing Unit
+ */
+
 #ifndef SPU_H
 #define SPU_H
 
@@ -6,6 +12,7 @@
 
 struct spu_context {
 	spu_data_t registers[N_REGISTERS];
+	spu_data_t RFLAGS;
 	spu_instruction_t *instr_buf;
 	size_t instr_bufsize;
 	size_t ip;

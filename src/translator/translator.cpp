@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief A translator
+ */
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -501,12 +507,12 @@ static int compile(struct translating_context *ctx) {
 		}
 
 		if (ret != S_EMPTY_INSTR) {
-			ctx->n_instruction++;
 #ifdef T_DEBUG
 			eprintf("Writing instruction: <0x");
 			buf_dump_hex(&instr, sizeof (instr), stderr);
 			eprintf(">\n");
 #endif /* T_DEBUG */
+			ctx->n_instruction++;
 			_CT_CHECKED(
 				(int)pvector_push_back(&ctx->instructions_arr, &instr));
 		}

@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brief Runner for SPU
+ */
+
 #include <stdlib.h>
 
 #include "spu.h"

@@ -1,3 +1,9 @@
+/**
+ * @file
+ *
+ * @brif BIT operations for SPU
+ */
+
 #ifndef SPU_BIT_OPS_H
 #define SPU_BIT_OPS_H
 
