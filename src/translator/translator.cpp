@@ -6,6 +6,7 @@
 #include "spu_debug.h"
 #include "translator_parsers.h"
 #include "pvector.h"
+#include "ctio.h"
 
 #ifdef _DEBUG
 #define T_DEBUG
@@ -70,20 +71,34 @@ struct op_cmd {
 
 struct label_instance {
 	char label[LABEL_MAX_LEN];
-	size_t instruction_ptr;
+	ssize_t instruction_ptr;
 };
 
 struct translating_context {
+	// Input file with asm text
+	FILE *in_stream;
+
+	// An array with binary instructions
+	pvector instructions_arr;
+
 	char **argsptrs;
+
 	size_t n_args;
 	size_t n_instruction;
+
 	FILE *out_stream;
+
+	// Table of labels
 	pvector labels_table;
+
 	const struct op_cmd *op_data;
+	int second_compilation = 1;
+	int do_second_compilation = 1;
 };
 
 static struct label_instance *find_label(struct translating_context *ctx,
 					 const char *label_name) {
+	assert (ctx);
 	assert (label_name);
 
 	for (size_t i = 0; i < ctx->labels_table.len; i++) {
@@ -107,6 +122,7 @@ static int process_label(struct translating_context *ctx) {
 	char *label_name = ctx->argsptrs[0];
 	size_t label_len = strlen(label_name);
 	struct label_instance label = {{0}};
+	struct label_instance *found_label = NULL;
 
 	if (	ctx->n_args != 1 || 
 		*label_name != '.' || 
@@ -125,13 +141,17 @@ static int process_label(struct translating_context *ctx) {
 		_CT_FAIL();
 	}
 
-	if (find_label(ctx, label_name)) {
-		log_error("Label %s is already used", label_name);
-		_CT_FAIL();
+	if ((found_label = find_label(ctx, label_name))) {
+		if (found_label->instruction_ptr != -1) {
+			log_error("Label %s is already used", label_name);
+			_CT_FAIL();
+		} else {
+			found_label->instruction_ptr = (ssize_t)ctx->n_instruction;
+		}
 	}
 
 	memcpy(label.label, label_name, label_len);
-	label.instruction_ptr = ctx->n_instruction;
+	label.instruction_ptr = (ssize_t)ctx->n_instruction;
 
 	if (pvector_push_back(&ctx->labels_table, &label)) {
 		_CT_FAIL();
@@ -254,7 +274,24 @@ static int jmp_cmd(struct translating_context *ctx,
 	if (*jmp_str == '.') {
 		struct label_instance *label_inst = find_label(ctx, jmp_str);
 		if (!label_inst) {
-			log_error("Label not found: %s", jmp_str);
+			size_t label_len = strlen(jmp_str);
+			struct label_instance label = {{0}};
+
+			if (label_len > LABEL_MAX_LEN) {
+				log_error("Invalid label: %s", jmp_str);
+				_CT_FAIL();
+			}
+
+			memcpy(label.label, jmp_str, label_len);
+			label.instruction_ptr = -1;
+
+			ctx->do_second_compilation = 1;
+
+			return S_OK;
+		}
+
+		if (ctx->second_compilation && label_inst->instruction_ptr == -1) {
+			log_error("Undefined label: %s", jmp_str);
 			_CT_FAIL();
 		}
 
@@ -393,7 +430,7 @@ static int parse_op(struct translating_context *ctx,
 	char *cmd = ctx->argsptrs[0];
 
 	if (*cmd == '.') {
-		if (process_label(ctx)) {
+		if (!ctx->second_compilation && process_label(ctx)) {
 			return S_FAIL;
 		}
 
@@ -412,10 +449,7 @@ static int parse_op(struct translating_context *ctx,
 	return S_FAIL;
 }
 
-static int parse_text(FILE *in_stream, FILE *out_stream) {
-	assert (in_stream);
-	assert (out_stream);
-
+static int compile(struct translating_context *ctx) {
 	int ret = S_OK;
 
 	char *lineptr = NULL;
@@ -424,18 +458,7 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 
 	size_t n_lines = 0;
 
-	struct translating_context ctx = {
-		.argsptrs = NULL,
-		.n_args = 0,
-		.n_instruction = 0,
-		.out_stream = out_stream,
-		.labels_table = {0},
-		.op_data = NULL,
-	};
-
-	pvector_init(&ctx.labels_table, sizeof(struct label_instance));
-
-	while ((nread = getline(&lineptr, &linesz, stdin)) != -1) {
+	while ((nread = getline(&lineptr, &linesz, ctx->in_stream)) != -1) {
 		char *argsptrs[MAX_INSTR_ARGS];
 		ssize_t n_args = 0;
 
@@ -444,25 +467,25 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 			_CT_FAIL();
 		}
 
-		ctx.argsptrs = argsptrs;
-		ctx.n_args = (size_t)n_args;
+		ctx->argsptrs = argsptrs;
+		ctx->n_args = (size_t)n_args;
 
 		struct spu_instruction instr = {0};
 
-		if ((ret = parse_op(&ctx, &instr)) < 0) {
+		if ((ret = parse_op(ctx, &instr)) < 0) {
 			log_error("Invalid line #%zu", n_lines);
 			_CT_FAIL();
 		}
 
 		if (ret != S_EMPTY_INSTR) {
-			ctx.n_instruction++;
+			ctx->n_instruction++;
 #ifdef T_DEBUG
 			eprintf("Writing instruction: <0x");
 			buf_dump_hex(&instr, sizeof (instr), stderr);
 			eprintf(">\n");
 #endif /* T_DEBUG */
-		
-			fwrite(&instr, sizeof(instr), 1, out_stream);
+			_CT_CHECKED(
+				(int)pvector_push_back(&ctx->instructions_arr, &instr));
 		}
 
 		n_lines++;
@@ -470,18 +493,91 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 
 _CT_EXIT_POINT:
 	free (lineptr);
+	return ret;
+}
+
+/**
+ * The in_stream should be seekable
+ */
+static int parse_text(FILE *in_stream, FILE *out_stream) {
+	assert (in_stream);
+	assert (out_stream);
+
+	int ret = S_OK;
+
+	struct translating_context ctx = {
+		.in_stream = in_stream,
+		.instructions_arr = {0},
+
+		.argsptrs = NULL,
+		.n_args = 0,
+		.n_instruction = 0,
+
+		.out_stream = out_stream,
+		.labels_table = {0},
+		.op_data = NULL,
+		.second_compilation = 0,
+		.do_second_compilation = 0,
+	};
+
+	pvector_init(&ctx.labels_table, sizeof(struct label_instance));
+	pvector_init(&ctx.instructions_arr, sizeof(spu_instruction_t));
+
+	_CT_CHECKED(compile(&ctx));
+
+	if (ctx.do_second_compilation) {
+		ctx.second_compilation = 1;
+
+		pvector_destroy(&ctx.instructions_arr);
+		pvector_init(&ctx.instructions_arr, sizeof(spu_instruction_t));
+
+		ctx.n_args = 0;
+		ctx.n_instruction = 0;
+
+		_CT_CHECKED(fseek(in_stream, 0, SEEK_SET));
+
+		_CT_CHECKED(compile(&ctx));
+	}
+
+	for (size_t i = 0; i < ctx.instructions_arr.len; i++) {
+		spu_instruction_t *instr = NULL;
+		_CT_CHECKED((int)pvector_get(&ctx.instructions_arr, i, (void **)&instr));
+		fwrite(instr, sizeof(*instr), 1, out_stream);
+	}
+
+_CT_EXIT_POINT:
 	fflush (out_stream);
 
 	pvector_destroy(&ctx.labels_table);
+	pvector_destroy(&ctx.instructions_arr);
 
 	return ret;
 }
 
 
-int main() {
-	if (parse_text(stdin, stdout)) {
-		return 1;
+int main(int argc, const char *argv[]) {
+	const char *asm_filename = "example.asm";
+
+	if (argc < 2) {
+	} else if (argc == 2) {
+		asm_filename = argv[1];
+	} else {
+		log_error("Invalid args");
+		return EXIT_FAILURE;
 	}
 
-	return 0;
+	FILE *in_stream = fopen(asm_filename, "r");
+	if (!in_stream) {
+		log_perror("Cannot open in_stream file\n");
+		return EXIT_FAILURE;
+	}
+
+	if (parse_text(in_stream, stdout)) {
+		log_error("Error while parsing asm");
+		return EXIT_FAILURE;
+	}
+
+	fclose(in_stream);
+
+	return EXIT_SUCCESS;
 }
