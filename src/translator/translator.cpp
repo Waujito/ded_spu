@@ -80,17 +80,25 @@ struct label_instance {
 	ssize_t instruction_ptr;
 };
 
+struct instruction_line {
+	char *lineptr;
+	size_t linesz;
+	char *argsptrs[MAX_INSTR_ARGS];
+	size_t n_args;
+};
+
 struct translating_context {
 	// Input file with asm text
-	FILE *in_stream;
+	pvector instr_lines_arr;
 
 	// An array with binary instructions
-	pvector instructions_arr;
+	pvector instructions_arr;	
 
-	char **argsptrs;
-
-	size_t n_args;
 	size_t n_instruction;
+
+	// const struct instruction_line *instr_line;
+	size_t n_args;
+	char **argsptrs;
 
 	FILE *out_stream;
 
@@ -212,18 +220,19 @@ static int mov_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	spu_register_num_t rd = 0;
-	spu_register_num_t rn = 0;
+	spu_register_num_t dest = 0;
+	spu_register_num_t src = 0;
 
-	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
-	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &dest));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &src));
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_register(dest, instr,
+				0, USE_R_HEAD_BIT));
 	_CT_CHECKED(instr_set_bitfield(0, MOV_RESERVED_FIELD_LEN,
 				instr, FREGISTER_BIT_LEN));
-	_CT_CHECKED(instr_set_register(rn, instr,
-				FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, 0));
+	_CT_CHECKED(instr_set_register(src, instr,
+				FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, NO_R_HEAD_BIT));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -239,11 +248,11 @@ static int ldc_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	spu_register_num_t rd = 0;
+	spu_register_num_t dest = 0;
 	int32_t number = 0;
 	uint32_t arg_num = 0;
 
-	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &dest));
 	_CT_CHECKED(parse_literal_number(ctx->argsptrs[2], &number));
 
 	if (number < 0 || number >= (1 << LDC_INTEGER_LEN)) {
@@ -254,7 +263,8 @@ static int ldc_cmd(struct translating_context *ctx,
 	arg_num = (uint32_t)number;
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
-	_CT_CHECKED(instr_set_register(rd, instr, 0, 1));
+	_CT_CHECKED(instr_set_register(dest, instr,
+				0, USE_R_HEAD_BIT));
 	_CT_CHECKED(instr_set_bitfield(arg_num, LDC_INTEGER_LEN,
 				instr, FREGISTER_BIT_LEN));
 
@@ -343,7 +353,7 @@ static int jmp_cmd(struct translating_context *ctx,
 
 	_CT_CHECKED(raw_cmd(ctx, instr));
 	// Written with register, but these are flags
-	_CT_CHECKED(instr_set_register(0, instr, 0, 1));
+	_CT_CHECKED(instr_set_register(0, instr, 0, USE_R_HEAD_BIT));
 	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
 				instr, JMP_INTEGER_OFF));
 
@@ -351,7 +361,7 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-// 4-bit rd, 5-bit rl, 5-bit rr
+// 1 + 4-bit dest, 5-bit src1, 5-bit src2
 static int triple_reg_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
 	assert (ctx);
@@ -362,19 +372,21 @@ static int triple_reg_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	spu_register_num_t rd = 0;
-	spu_register_num_t rl = 0;
-	spu_register_num_t rr = 0;
+	spu_register_num_t dest = 0;
+	spu_register_num_t src1 = 0;
+	spu_register_num_t src2 = 0;
 
-	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
-	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rl));
-	_CT_CHECKED(parse_register(ctx->argsptrs[3], &rr));
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &dest));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &src1));
+	_CT_CHECKED(parse_register(ctx->argsptrs[3], &src2));
 
 	_CT_CHECKED(directive_cmd(ctx, instr));
-	_CT_CHECKED(directive_set_register(rd, instr,0, 1));
-	_CT_CHECKED(directive_set_register(rl, instr, FREGISTER_BIT_LEN, 0));
-	_CT_CHECKED(directive_set_register(rr, instr,
-				    FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));
+	_CT_CHECKED(directive_set_register(dest, instr,
+				    0, USE_R_HEAD_BIT));
+	_CT_CHECKED(directive_set_register(src1, instr,
+				    FREGISTER_BIT_LEN, NO_R_HEAD_BIT));
+	_CT_CHECKED(directive_set_register(src2, instr,
+				    FREGISTER_BIT_LEN + REGISTER_BIT_LEN, NO_R_HEAD_BIT));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -390,15 +402,17 @@ static int unary_op_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	spu_register_num_t rd = 0;
-	spu_register_num_t rn = 0;
+	spu_register_num_t dest = 0;
+	spu_register_num_t src = 0;
 
-	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rd));
-	_CT_CHECKED(parse_register(ctx->argsptrs[2], &rn));
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &dest));
+	_CT_CHECKED(parse_register(ctx->argsptrs[2], &src));
 
 	_CT_CHECKED(directive_cmd(ctx, instr));
-	_CT_CHECKED(directive_set_register(rd, instr, 0, 1));
-	_CT_CHECKED(directive_set_register(rn, instr, FREGISTER_BIT_LEN, 0));
+	_CT_CHECKED(directive_set_register(dest, instr,
+				    0, USE_R_HEAD_BIT));
+	_CT_CHECKED(directive_set_register(src, instr,
+				    FREGISTER_BIT_LEN, NO_R_HEAD_BIT));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -414,12 +428,13 @@ static int single_reg_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
-	spu_register_num_t rn = 0;
+	spu_register_num_t src = 0;
 
-	_CT_CHECKED(parse_register(ctx->argsptrs[1], &rn));
+	_CT_CHECKED(parse_register(ctx->argsptrs[1], &src));
 
 	_CT_CHECKED(directive_cmd(ctx, instr));
-	_CT_CHECKED(directive_set_register(rn, instr, 0, 1));
+	_CT_CHECKED(directive_set_register(src, instr,
+				0, USE_R_HEAD_BIT));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -479,68 +494,65 @@ static int parse_op(struct translating_context *ctx,
 	return S_FAIL;
 }
 
-static int compile(struct translating_context *ctx) {
+static int assembly(struct translating_context *ctx) {
+	assert (ctx);
+
 	int ret = S_OK;
 
-	char *lineptr = NULL;
-	size_t linesz = 0;
-	ssize_t nread = 0;
+	int status = 0;
 
 	size_t n_lines = 0;
 
-	while ((nread = getline(&lineptr, &linesz, ctx->in_stream)) != -1) {
-		char *argsptrs[MAX_INSTR_ARGS];
-		ssize_t n_args = 0;
-
-		if ((n_args = tokenize_opcodeline(lineptr, argsptrs)) < 0) {
-			log_error("Invalid line #%zu", n_lines);
-			_CT_FAIL();
-		}
-
-		ctx->argsptrs = argsptrs;
-		ctx->n_args = (size_t)n_args;
+	for (size_t i = 0; i < ctx->instr_lines_arr.len; i++) {
+		struct instruction_line *instr_line = NULL;
+		_CT_CHECKED(pvector_get(&ctx->instr_lines_arr,
+			  i, (void **)&instr_line));
 
 		struct spu_instruction instr = {0};
 
-		if ((ret = parse_op(ctx, &instr)) < 0) {
+		ctx->argsptrs = instr_line->argsptrs;
+		ctx->n_args = instr_line->n_args;
+
+		if ((status = parse_op(ctx, &instr)) < 0) {
 			log_error("Invalid line #%zu", n_lines);
 			_CT_FAIL();
 		}
 
-		if (ret != S_EMPTY_INSTR) {
+		if (status != S_EMPTY_INSTR) {
 #ifdef T_DEBUG
 			eprintf("Writing instruction: <0x");
 			buf_dump_hex(&instr, sizeof (instr), stderr);
 			eprintf(">\n");
 #endif /* T_DEBUG */
 			ctx->n_instruction++;
-			_CT_CHECKED(
-				(int)pvector_push_back(&ctx->instructions_arr, &instr));
+			_CT_CHECKED(pvector_push_back(
+				&ctx->instructions_arr, &instr));
 		}
 
 		n_lines++;
 	}
 
 _CT_EXIT_POINT:
-	free (lineptr);
 	return ret;
 }
 
 /**
  * The in_stream should be seekable
  */
-static int parse_text(FILE *in_stream, FILE *out_stream) {
-	assert (in_stream);
+static int parse_text(const char *in_filename, FILE *out_stream) {
+	assert (in_filename);
 	assert (out_stream);
 
 	int ret = S_OK;
 
+	char *textbuf = NULL;
+	size_t textbuf_len = 0;
+	struct pvector lines_arr = {0};
+
 	struct translating_context ctx = {
-		.in_stream = in_stream,
+		.instr_lines_arr = {0},
 		.instructions_arr = {0},
 
-		.argsptrs = NULL,
-		.n_args = 0,
 		.n_instruction = 0,
 
 		.out_stream = out_stream,
@@ -550,36 +562,69 @@ static int parse_text(FILE *in_stream, FILE *out_stream) {
 		.do_second_compilation = 0,
 	};
 
-	pvector_init(&ctx.labels_table, sizeof(struct label_instance));
-	pvector_init(&ctx.instructions_arr, sizeof(spu_instruction_t));
+	size_t nlines = 0;
 
-	_CT_CHECKED(compile(&ctx));
+	_CT_CHECKED(read_file(in_filename, &textbuf, &textbuf_len));
 
-	if (ctx.do_second_compilation) {
-		ctx.second_compilation = 1;
+	nlines = count_lines(textbuf, textbuf_len);
 
-		pvector_destroy(&ctx.instructions_arr);
-		pvector_init(&ctx.instructions_arr, sizeof(spu_instruction_t));
+	_CT_CHECKED(pvector_read_lines(&lines_arr, 
+			  textbuf, textbuf_len));
+	_CT_CHECKED(pvector_init(&ctx.instr_lines_arr,
+			  sizeof(instruction_line)));
 
-		ctx.n_args = 0;
-		ctx.n_instruction = 0;
+	for (size_t i = 0; i < lines_arr.len; i++) {
+		struct text_line *line = NULL;
+		_CT_CHECKED(pvector_get(
+			&lines_arr, i, (void **)&line));
+		struct instruction_line instr_line = {
+			.lineptr = line->line_ptr,
+			.linesz = line->line_sz,
+			.argsptrs = {0},
+			.n_args = 0,
+		};
 
-		_CT_CHECKED(fseek(in_stream, 0, SEEK_SET));
+		ssize_t n_args = 0;
 
-		_CT_CHECKED(compile(&ctx));
+		if ((n_args = tokenize_opcodeline(
+			instr_line.lineptr,
+			instr_line.argsptrs)) < 0) {
+			log_error("Invalid line #%zu", i + 1);
+			_CT_FAIL();
+		}
+		instr_line.n_args = (size_t)n_args;
+
+		_CT_CHECKED(pvector_push_back(
+			&ctx.instr_lines_arr, &instr_line));
 	}
+
+	pvector_destroy(&lines_arr);
+	
+	_CT_CHECKED(pvector_init(&ctx.labels_table,
+			  sizeof(struct label_instance)));
+	_CT_CHECKED(pvector_init(&ctx.instructions_arr,
+			  sizeof(spu_instruction_t)));
+
+	_CT_CHECKED(assembly(&ctx));
+
+	ctx.second_compilation = 1;
+	_CT_CHECKED(pvector_empty(&ctx.instructions_arr));
+	ctx.n_instruction = 0;
+	_CT_CHECKED(assembly(&ctx));
 
 	for (size_t i = 0; i < ctx.instructions_arr.len; i++) {
 		spu_instruction_t *instr = NULL;
-		_CT_CHECKED((int)pvector_get(&ctx.instructions_arr, i, (void **)&instr));
+		_CT_CHECKED(pvector_get(
+			&ctx.instructions_arr, i, (void **)&instr));
 		fwrite(instr, sizeof(*instr), 1, out_stream);
 	}
 
 _CT_EXIT_POINT:
-	fflush (out_stream);
-
-	pvector_destroy(&ctx.labels_table);
 	pvector_destroy(&ctx.instructions_arr);
+	pvector_destroy(&ctx.labels_table);
+	pvector_destroy(&ctx.instr_lines_arr);
+	pvector_destroy(&lines_arr);
+	free(textbuf);
 
 	return ret;
 }
@@ -596,18 +641,10 @@ int main(int argc, const char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
-	FILE *in_stream = fopen(asm_filename, "r");
-	if (!in_stream) {
-		log_perror("Cannot open in_stream file\n");
-		return EXIT_FAILURE;
-	}
-
-	if (parse_text(in_stream, stdout)) {
+	if (parse_text(asm_filename, stdout)) {
 		log_error("Error while parsing asm");
 		return EXIT_FAILURE;
 	}
-
-	fclose(in_stream);
 
 	return EXIT_SUCCESS;
 }

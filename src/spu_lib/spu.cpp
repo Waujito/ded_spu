@@ -82,34 +82,31 @@ int SPUExecute(struct spu_context *ctx) {
 		ctx->ip++;
 
 		ret = SPUExecuteInstruction(ctx, instr);
-		if (ret) {
-			if (ret < 0) {
-				return S_FAIL;
-			} else {
-				return S_OK;
-			}
+		if (ret < 0) {
+			return S_FAIL;
+		} else if (ret > 0) {
+			return S_OK;
 		}
 	}
 
 	return S_OK;
 }
 
+// Dumps first n registers
+#define N_DUMPED_REGISTERS (5)
+
 int SPUDump(struct spu_context *ctx, FILE *out_stream) {
 	assert (ctx);
+	assert (out_stream);
 
 #define DPRINT(...) fprintf(out_stream, __VA_ARGS__)
 
 	DPRINT(	"SPU Core Dumped: {\n\n" );
-	for (size_t i = 0; i < 5; i++) {
+	for (size_t i = 0; i < N_DUMPED_REGISTERS; i++) {
 		DPRINT("r%zu:\t<0x", i);
 		buf_dump_hex(&ctx->registers[i], sizeof(ctx->registers[0]), out_stream);
 		DPRINT(	">\n");
 	}
-
-	DPRINT("rsp:\t<0x");
-	buf_dump_hex(&ctx->registers[REGISTER_RSP_CODE], 
-			sizeof(ctx->registers[0]), out_stream);
-	DPRINT(	">\n");
 
 	DPRINT("ip:\t<%lx>\n", ctx->ip);
 

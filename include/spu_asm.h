@@ -115,7 +115,7 @@ enum spu_opcodes {
 	 * |----------|------------------|------------------|--------------|
 	 * ```
 	 */
-	MOV_OPCODE	= (0x01),
+	MOV_OPCODE	= 0x01,
 #define MOV_RESERVED_FIELD_LEN (2)
 
 	/**
@@ -132,7 +132,7 @@ enum spu_opcodes {
 	 * |----------|----------------------------------------------------|
 	 * ```
 	 */
-	LDC_OPCODE	= (0x02),	
+	LDC_OPCODE	= 0x02,
 #define LDC_INTEGER_LEN (20)
 
 	/**
@@ -152,7 +152,7 @@ enum spu_opcodes {
 	 * |------------------|--------------------------------------------|
 	 * ```
 	 */
-	JMP_OPCODE	= (0x03),
+	JMP_OPCODE	= 0x03,
 #define JMP_INTEGER_OFF  (4)
 #define JMP_INTEGER_BLEN (20)
 
@@ -177,16 +177,16 @@ enum spu_opcodes {
 	 * |---------------------------|-----------------------------------|
 	 * ```
 	 */
-	DIRECTIVE_OPCODE= (0x3e),
+	DIRECTIVE_OPCODE = 0x3e,
 #define DIRECTIVE_INSTR_BITLEN (10)
 };
 
 enum spu_cmp_flags {
-	CMP_DO_CMP		= (1 << 0),
-	CMP_EQ_FLAG		= (1 << 1),
-	CMP_SIGN_FLAG		= (1 << 2),
-	CMP_OVERFLOW_FLAG	= (1 << 3),
-	CMP_RESERVED_FLAG	= (1 << 4),
+	CMP_DO_CMP		= 1 << 0,
+	CMP_EQ_FLAG		= 1 << 1,
+	CMP_SIGN_FLAG		= 1 << 2,
+	CMP_OVERFLOW_FLAG	= 1 << 3,
+	CMP_RESERVED_FLAG	= 1 << 4,
 };
 
 #define MAX_BASE_OPCODE (0x3F)
@@ -206,6 +206,7 @@ struct spu_baseopcode {
 #endif
 } __attribute__((packed));
 
+// TODO No unions, UB
 struct spu_instruction {
 	union {
 		spu_instruction_t instruction;
@@ -258,38 +259,38 @@ struct spu_instruction {
  */
 enum spu_directive_opcodes {
 	/// Triple-register operation
-	ADD_OPCODE	= (0x01),
+	ADD_OPCODE	= 0x01,
 	/// Triple-register operation
-	MUL_OPCODE	= (0x02),
+	MUL_OPCODE	= 0x02,
 	/// Triple-register operation
-	SUB_OPCODE	= (0x03),
+	SUB_OPCODE	= 0x03,
 	/// Integer division
 	/// Triple-register operation
-	DIV_OPCODE	= (0x04),
+	DIV_OPCODE	= 0x04,
 	/// Triple-register operation
-	MOD_OPCODE	= (0x05),
+	MOD_OPCODE	= 0x05,
 
 	/// Integer square root
 	/// Unary operation
-	SQRT_OPCODE	= (0x08),
+	SQRT_OPCODE	= 0x08,
 
 	/// Single-register operation
-	PUSHR_OPCODE	= (0x20),
+	PUSHR_OPCODE	= 0x20,
 	/// Single-register operation
-	POPR_OPCODE	= (0x21),
+	POPR_OPCODE	= 0x21,
 
 	/// Single-register operation
-	INPUT_OPCODE	= (0x50),
+	INPUT_OPCODE	= 0x50,
 	/// Single-register operation
-	PRINT_OPCODE	= (0x51),
+	PRINT_OPCODE	= 0x51,
 
 	/// Compares two registers
-	CMP_OPCODE	= (0x70),
+	CMP_OPCODE	= 0x70,
 
 	/// No-args operation
-	DUMP_OPCODE	= (0xFE),
+	DUMP_OPCODE	= 0xFE,
 	/// No-args operation
-	HALT_OPCODE	= (0xFF),
+	HALT_OPCODE	= 0xFF,
 };
 
 #endif /* SPU_ASM_H */

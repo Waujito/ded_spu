@@ -18,16 +18,23 @@
  */
 
 #include <assert.h>
+#include <math.h>
+#include <string.h>
 
 #include "spu.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
-#include <math.h>
+#ifndef SPU_INSTR_H
+#define SPU_INSTR_H
+#else
+# error "DOUBLE SPU_INSTRUCTION.H INCLUSION FORBIDDEN!"
+#endif /* SPU_INSTR_H */
 
 #if ! (defined(SPU_INSTR_MODE_EXEC) || defined(SPU_INSTR_MODE_DISASM))
 # error "Configure spu_instruction.h with SPU_INSTR_MODE_EXEC or SPU_INSTR_MODE_DISASM!"
 #endif
+
 
 #define S_EXIT (3)
 
@@ -63,53 +70,68 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 	int ret = S_OK;
 
 	uint32_t directive_code = 0;
-	spu_register_num_t rd = 0;
-	spu_register_num_t rn = 0;
-	spu_register_num_t rl = 0;
-	spu_register_num_t rr = 0;
+	spu_register_num_t dest = 0;
+	spu_register_num_t src = 0;
+	spu_register_num_t src1 = 0;
+	spu_register_num_t src2 = 0;
 
 	instr_get_bitfield(&directive_code, 10, &instr, 0);
 
 	switch (directive_code) {
 
-#define TRIPLE_REG_READ__(instr_name)						\
-	_CT_CHECKED(directive_get_register(&rd, &instr,	0, 1));			\
-	_CT_CHECKED(directive_get_register(&rl, &instr, FREGISTER_BIT_LEN, 0));	\
-	_CT_CHECKED(directive_get_register(&rr, &instr,				\
-				FREGISTER_BIT_LEN + REGISTER_BIT_LEN, 0));	\
-	INSTR_LOG(instr, instr_name " r%d r%d r%d", rd, rl, rr)
+#define TRIPLE_REG_READ__(instr_name)							\
+	_CT_CHECKED(directive_get_register(&dest, &instr,				\
+				0, USE_R_HEAD_BIT));					\
+	_CT_CHECKED(directive_get_register(&src1, &instr,				\
+				FREGISTER_BIT_LEN, NO_R_HEAD_BIT));			\
+	_CT_CHECKED(directive_get_register(&src2, &instr,				\
+				FREGISTER_BIT_LEN + REGISTER_BIT_LEN, NO_R_HEAD_BIT));	\
+	INSTR_LOG(instr, instr_name " r%d r%d r%d", dest, src1, src2)
 
 		case ADD_OPCODE:
 			TRIPLE_REG_READ__("add");
-			ctx->registers[rd] = ctx->registers[rl] + ctx->registers[rr];
+			ctx->registers[dest] = ctx->registers[src1] + ctx->registers[src2];
 			break;
 		case MUL_OPCODE:
 			TRIPLE_REG_READ__("mul");
-			ctx->registers[rd] = ctx->registers[rl] * ctx->registers[rr];
+			ctx->registers[dest] = ctx->registers[src1] * ctx->registers[src1];
 			break;
 		case SUB_OPCODE:
 			TRIPLE_REG_READ__("sub");
-			ctx->registers[rd] = ctx->registers[rl] - ctx->registers[rr];
+			ctx->registers[dest] = ctx->registers[src1] - ctx->registers[src2];
 			break;
 		case DIV_OPCODE:
 			TRIPLE_REG_READ__("div");
-			ctx->registers[rd] = ctx->registers[rl] / ctx->registers[rr];
+
+			if (!ctx->registers[src2]) {
+				_CT_FAIL();
+			}
+			ctx->registers[dest] = ctx->registers[src1] / ctx->registers[src2];
 			break;
 		case MOD_OPCODE:
 			TRIPLE_REG_READ__("mod");
-			ctx->registers[rd] = ctx->registers[rl] % ctx->registers[rr];
+
+			if (!ctx->registers[src2]) {
+				_CT_FAIL();
+			}
+			ctx->registers[dest] = ctx->registers[src1] % ctx->registers[src2];
 			break;
 #undef TRIPLE_ARG_READ__
 		case CMP_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(directive_get_register(&rn, &instr,
-						FREGISTER_BIT_LEN, 0));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+						0, USE_R_HEAD_BIT));
+			_CT_CHECKED(directive_get_register(&src, &instr,
+						FREGISTER_BIT_LEN, NO_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "cmp r%d r%d", rd, rn);
+			INSTR_LOG(instr, "cmp r%d r%d", dest, src);
 
 			{
-				int64_t lnum = *(int64_t *)(ctx->registers + rd);
-				int64_t rnum = *(int64_t *)(ctx->registers + rn);
+				int64_t lnum = 0;
+				int64_t rnum = 0;
+
+				memcpy(&lnum, ctx->registers + dest, sizeof(lnum));
+				memcpy(&rnum, ctx->registers + dest, sizeof(rnum));
+
 				ctx->RFLAGS = 0;
 
 				if (lnum == rnum) {
@@ -118,64 +140,75 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 				if (lnum < rnum) {
 					ctx->RFLAGS |= CMP_SIGN_FLAG;
 				}
-				double d = (double)inum;
-				d = sqrt(d);
-				inum = (int64_t)d;
-				ctx->registers[rd] = *(uint64_t *)&inum;
 			}
 
 			break;
 
 		case SQRT_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(directive_get_register(&rn, &instr,
-						FREGISTER_BIT_LEN, 0));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+						0, USE_R_HEAD_BIT));
+			_CT_CHECKED(directive_get_register(&src, &instr,
+						FREGISTER_BIT_LEN, NO_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "sqrt r%d r%d", rd, rn);
+			INSTR_LOG(instr, "sqrt r%d r%d", dest, src);
 
 			{
-				int64_t inum = *(int64_t *)(ctx->registers + rn);
-				double d = (double)inum;
+				int64_t snum = 0;
+				memcpy(&snum, ctx->registers + src, sizeof(snum));
+
+				if (snum < 0) {
+					_CT_FAIL();
+				}
+
+				double d = (double)snum;
 				d = sqrt(d);
-				inum = (int64_t)d;
-				ctx->registers[rd] = *(uint64_t *)&inum;
+				snum = (int64_t)d;
+				memcpy(ctx->registers + dest, &snum, sizeof(ctx->registers[0]));
 			}
 
 			break;
 
 		case PUSHR_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+							0, USE_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "pushr r%d", rd);
+			INSTR_LOG(instr, "pushr r%d", dest);
 
-			if (pvector_push_back(&ctx->stack, &(ctx->registers[rd])))
+			if (pvector_push_back(&ctx->stack, &(ctx->registers[dest])))
 				_CT_FAIL();
 
 			break;
 		case POPR_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+							0, USE_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "popr r%d", rd);
+			INSTR_LOG(instr, "popr r%d", dest);
 
-			if (pvector_pop_back(&ctx->stack, &(ctx->registers[rd])))
+			if (pvector_pop_back(&ctx->stack, &(ctx->registers[dest])))
 				_CT_FAIL();
 			break;
 		case INPUT_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+							0, USE_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "input r%d", rd);
+			INSTR_LOG(instr, "input r%d", dest);
 			
-			if (scanf("%ld", (int64_t *)&ctx->registers[rd]) != 1) {
+		{
+			int64_t snum = 0;
+			if (scanf("%ld", &snum) != 1) {
 				_CT_FAIL();
 			}
+			memcpy(ctx->registers + dest, &snum, sizeof(ctx->registers[0]));
+		}
 
 			break;
 		case PRINT_OPCODE:
-			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(directive_get_register(&dest, &instr,
+							0, USE_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "print r%d", rd);
+			INSTR_LOG(instr, "print r%d", dest);
 
-			printf("%ld\n", (int64_t)(ctx->registers[rd]));
+			printf("%ld\n", (int64_t)(ctx->registers[dest]));
 			break;
 
 		case DUMP_OPCODE:
@@ -206,57 +239,55 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 
 	int ret = S_OK;
 
-	uint32_t num = 0;
-	int32_t dnum = 0;
+	uint32_t	unum = 0;
+	int32_t		snum = 0;
 
-	spu_register_num_t rd = 0;
-	spu_register_num_t rn = 0;
-	spu_register_num_t rl = 0;
-	spu_register_num_t rr = 0;
+	spu_register_num_t dest = 0;
+	spu_register_num_t src = 0;
+	spu_register_num_t src1 = 0;
+	spu_register_num_t src2 = 0;
 
 	switch (instr.opcode.code) {
 		case MOV_OPCODE:
-			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_register(&rn, &instr,
-					FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, 0));
+			_CT_CHECKED(instr_get_register(&dest, &instr,
+					0, USE_R_HEAD_BIT));
+			_CT_CHECKED(instr_get_register(&src, &instr,
+					FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, NO_R_HEAD_BIT));
 
-			INSTR_LOG(instr, "mov r%d r%d", rd, rn);
+			INSTR_LOG(instr, "mov r%d r%d", dest, src);
 
-			ctx->registers[rd] = ctx->registers[rn];
+			ctx->registers[dest] = ctx->registers[src];
 
 			break;
 		case LDC_OPCODE:
-			_CT_CHECKED(instr_get_register(&rd, &instr, 0, 1));
-			_CT_CHECKED(instr_get_bitfield(&num, LDC_INTEGER_LEN,
+			_CT_CHECKED(instr_get_register(&dest, &instr,
+					0, USE_R_HEAD_BIT));
+			_CT_CHECKED(instr_get_bitfield(&unum, LDC_INTEGER_LEN,
 					&instr, FREGISTER_BIT_LEN));
 
-			INSTR_LOG(instr, "ldc r%d $0x%x", rd, num);
+			INSTR_LOG(instr, "ldc r%d $0x%x", dest, unum);
 
-			num = htole32(num);
-			ctx->registers[rd] = num;
+			unum = htole32(unum);
+			ctx->registers[dest] = unum;
 
 			break;
-		case JMP_OPCODE:
-			_CT_CHECKED(instr_get_bitfield(&num, JMP_INTEGER_BLEN,
+		case JMP_OPCODE: {
+			_CT_CHECKED(instr_get_bitfield(&unum, JMP_INTEGER_BLEN,
 					&instr, JMP_INTEGER_OFF));
 
-			num <<= sizeof(uint32_t) * 8 - JMP_INTEGER_BLEN;
-			dnum = (int32_t)num;
-			dnum >>= sizeof(uint32_t) * 8 - JMP_INTEGER_BLEN;
+			snum = bit_extend_signed(unum, JMP_INTEGER_BLEN);
+			int64_t new_ip = (int64_t)ctx->ip + snum;
 
-			INSTR_LOG(instr, "jmp $%d", dnum);
+			INSTR_LOG(instr, "jmp $%d", snum);
 
-			if (
-				(dnum < 0 && ctx->ip < (size_t)(-dnum)) ||
-				(dnum > 0 && ctx->ip + (size_t)dnum >= 
-						ctx->instr_bufsize)
-			) {
+			if (new_ip < 0 || (size_t)new_ip > ctx->instr_bufsize) {
 				_CT_FAIL();
 			}
 
-			ctx->ip = (size_t)((int64_t)ctx->ip + dnum);
+			ctx->ip = (size_t)new_ip;
 
 			break;
+		}
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM
 			return DisasmDirectiveInstruction(ctx, instr);

@@ -9,6 +9,8 @@
 
 #include "spu_asm.h"
 
+#define NO_R_HEAD_BIT	(0)
+#define USE_R_HEAD_BIT	(1)
 
 uint32_t get_instr_arg(const struct spu_instruction *instr);
 void set_instr_arg(struct spu_instruction *instr, uint32_t arg);
@@ -56,5 +58,7 @@ static inline int directive_get_register(spu_register_num_t *rn,
 	return instr_get_register(rn, instr,
 			   pos + DIRECTIVE_INSTR_BITLEN, spec_head_bit);
 }
+
+int32_t bit_extend_signed(uint32_t unum, size_t num_blen);
 
 #endif /* SPU_BIT_OPS_H */

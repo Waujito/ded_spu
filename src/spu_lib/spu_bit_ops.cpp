@@ -33,16 +33,15 @@ void set_instr_arg(struct spu_instruction *instr, uint32_t arg) {
 }
 
 int instr_set_bitfield(
-	uint32_t field, size_t fieldlen,
-	struct spu_instruction *instr, size_t pos) {
+		uint32_t field, size_t fieldlen,
+		struct spu_instruction *instr, size_t pos) {
 	assert (instr);
 
 	if (pos + fieldlen > SPU_INSTR_ARG_BITLEN) {
 		return -1;
 	}
 
-	uint32_t mask = (1 << (fieldlen));
-	mask -= 1;
+	uint32_t mask = (1 << (fieldlen)) - 1;
 	uint32_t arg = get_instr_arg(instr);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
@@ -68,8 +67,7 @@ int instr_get_bitfield(
 		return -1;
 	}
 
-	uint32_t mask = (1 << (fieldlen));
-	mask -= 1;
+	uint32_t mask = (1 << (fieldlen)) - 1;
 
 	uint32_t arg = get_instr_arg(instr);
 
@@ -130,4 +128,14 @@ int instr_get_register(spu_register_num_t *rn,
 	*rn = (uint8_t)regnum;
 
 	return S_OK;
+}
+
+int32_t bit_extend_signed(uint32_t unum, size_t num_blen) {
+	int32_t snum = 0;
+
+	unum <<= sizeof(unum) * 8 - num_blen;
+	snum = (int32_t)unum;
+	snum >>= sizeof(snum) * 8 - num_blen;
+	
+	return snum;
 }
