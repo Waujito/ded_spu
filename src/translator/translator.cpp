@@ -433,6 +433,7 @@ const static struct op_cmd op_data[] = {
 	{"popr",	POPR_OPCODE,	single_reg_cmd},
 	{"input",	INPUT_OPCODE,	single_reg_cmd},
 	{"print",	PRINT_OPCODE,	single_reg_cmd},
+	{"cmp",		CMP_OPCODE,	unary_op_cmd},
 	{"add",		ADD_OPCODE,	triple_reg_cmd},
 	{"mul",		MUL_OPCODE,	triple_reg_cmd},
 	{"sub",		SUB_OPCODE,	triple_reg_cmd},

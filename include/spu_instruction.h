@@ -100,6 +100,31 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			ctx->registers[rd] = ctx->registers[rl] % ctx->registers[rr];
 			break;
 #undef TRIPLE_ARG_READ__
+		case CMP_OPCODE:
+			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));
+			_CT_CHECKED(directive_get_register(&rn, &instr,
+						FREGISTER_BIT_LEN, 0));
+
+			INSTR_LOG(instr, "cmp r%d r%d", rd, rn);
+
+			{
+				int64_t lnum = *(int64_t *)(ctx->registers + rd);
+				int64_t rnum = *(int64_t *)(ctx->registers + rn);
+				ctx->RFLAGS = 0;
+
+				if (lnum == rnum) {
+					ctx->RFLAGS |= CMP_EQ_FLAG;
+				}
+				if (lnum < rnum) {
+					ctx->RFLAGS |= CMP_SIGN_FLAG;
+				}
+				double d = (double)inum;
+				d = sqrt(d);
+				inum = (int64_t)d;
+				ctx->registers[rd] = *(uint64_t *)&inum;
+			}
+
+			break;
 
 		case SQRT_OPCODE:
 			_CT_CHECKED(directive_get_register(&rd, &instr, 0, 1));

@@ -283,6 +283,9 @@ enum spu_directive_opcodes {
 	/// Single-register operation
 	PRINT_OPCODE	= (0x51),
 
+	/// Compares two registers
+	CMP_OPCODE	= (0x70),
+
 	/// No-args operation
 	DUMP_OPCODE	= (0xFE),
 	/// No-args operation
