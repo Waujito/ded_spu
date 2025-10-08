@@ -181,12 +181,20 @@ enum spu_opcodes {
 #define DIRECTIVE_INSTR_BITLEN (10)
 };
 
+enum jmp_conditions {
+	UNCONDITIONAL_JMP	= 0x0,
+	EQUALS_JMP		= 0x1,
+	NOT_EQUALS_JMP		= 0x2,
+	GREATER_EQUALS_JMP	= 0x3,
+	GREATER_JMP		= 0x4,
+	LESS_EQUALS_JMP		= 0x5,
+	LESS_JMP		= 0x6,
+};
+
 enum spu_cmp_flags {
-	CMP_DO_CMP		= 1 << 0,
-	CMP_EQ_FLAG		= 1 << 1,
-	CMP_SIGN_FLAG		= 1 << 2,
-	CMP_OVERFLOW_FLAG	= 1 << 3,
-	CMP_RESERVED_FLAG	= 1 << 4,
+	CMP_EQ_FLAG		= 1 << 0,
+	CMP_SIGN_FLAG		= 1 << 1,
+	CMP_OVERFLOW_FLAG	= 1 << 2,
 };
 
 #define MAX_BASE_OPCODE (0x3F)

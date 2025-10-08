@@ -348,14 +348,22 @@ static int jmp_cmd(struct translating_context *ctx,
 
 	int ret = S_OK;
 
+	unsigned int jump_condition = ctx->op_data->opcode;
+	// unsigned int jump_condition = 0;//ctx->op_data->opcode;
+
 	uint32_t arg_num = 0;
+
 	_CT_CHECKED(parse_jmp_position(ctx, instr, jmp_str, &arg_num));
 
-	_CT_CHECKED(raw_cmd(ctx, instr));
-	// Written with register, but these are flags
-	_CT_CHECKED(instr_set_register(0, instr, 0, USE_R_HEAD_BIT));
+	instr->opcode.code	= JMP_OPCODE;
+	instr->opcode.reserved1 = 0;
+
+	// !!! Setts flags instead of registers !!!
+	_CT_CHECKED(instr_set_register(
+		(spu_register_num_t)jump_condition,
+		instr, 0, USE_R_HEAD_BIT));
 	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
-				instr, JMP_INTEGER_OFF));
+				instr, FREGISTER_BIT_LEN));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -443,7 +451,13 @@ _CT_EXIT_POINT:
 const static struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldc",		LDC_OPCODE,	ldc_cmd},
-	{"jmp",		JMP_OPCODE,	jmp_cmd},
+	{"jmp",		UNCONDITIONAL_JMP,	jmp_cmd},
+	{"jmp.eq",	EQUALS_JMP,		jmp_cmd},
+	{"jmp.neq",	NOT_EQUALS_JMP,		jmp_cmd},
+	{"jmp.geq",	GREATER_EQUALS_JMP,	jmp_cmd},
+	{"jmp.g",	GREATER_JMP,		jmp_cmd},
+	{"jmp.leq",	LESS_EQUALS_JMP,	jmp_cmd},
+	{"jmp.l",	LESS_JMP,		jmp_cmd},
 	{"pushr",	PUSHR_OPCODE,	single_reg_cmd},
 	{"popr",	POPR_OPCODE,	single_reg_cmd},
 	{"input",	INPUT_OPCODE,	single_reg_cmd},

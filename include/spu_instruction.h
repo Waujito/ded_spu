@@ -130,7 +130,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 				int64_t rnum = 0;
 
 				memcpy(&lnum, ctx->registers + dest, sizeof(lnum));
-				memcpy(&rnum, ctx->registers + dest, sizeof(rnum));
+				memcpy(&rnum, ctx->registers + src, sizeof(rnum));
 
 				ctx->RFLAGS = 0;
 
@@ -272,13 +272,55 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 
 			break;
 		case JMP_OPCODE: {
+			// !!! Not a register, just flags !!!
+			_CT_CHECKED(instr_get_register(&dest, &instr,
+				  0, USE_R_HEAD_BIT));
 			_CT_CHECKED(instr_get_bitfield(&unum, JMP_INTEGER_BLEN,
-					&instr, JMP_INTEGER_OFF));
+					&instr, FREGISTER_BIT_LEN));
 
 			snum = bit_extend_signed(unum, JMP_INTEGER_BLEN);
 			int64_t new_ip = (int64_t)ctx->ip + snum;
 
-			INSTR_LOG(instr, "jmp $%d", snum);
+			INSTR_LOG(instr, "jmp.$%d $%d", dest, snum);
+
+			switch (dest) {
+				case UNCONDITIONAL_JMP:
+					break;
+				case EQUALS_JMP:
+					if (!(ctx->RFLAGS & CMP_EQ_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				case NOT_EQUALS_JMP:
+					if ((ctx->RFLAGS & CMP_EQ_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				case GREATER_EQUALS_JMP:
+					if ((ctx->RFLAGS & CMP_SIGN_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				case GREATER_JMP:
+					if ((ctx->RFLAGS & CMP_SIGN_FLAG) ||
+					    (ctx->RFLAGS & CMP_EQ_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				case LESS_EQUALS_JMP:
+					if (!(ctx->RFLAGS & CMP_SIGN_FLAG) &&
+					    !(ctx->RFLAGS & CMP_EQ_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				case LESS_JMP:
+					if (!(ctx->RFLAGS & CMP_SIGN_FLAG)) {
+						goto _CT_EXIT_POINT;
+					}
+					break;
+				default:
+					_CT_FAIL();
+			}
 
 			if (new_ip < 0 || (size_t)new_ip > ctx->instr_bufsize) {
 				_CT_FAIL();

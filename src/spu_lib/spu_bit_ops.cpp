@@ -7,6 +7,7 @@
 #include <assert.h>
 
 #include "spu_asm.h"
+#include "spu_debug.h"
 #include "spu_bit_ops.h"
 
 uint32_t get_instr_arg(const struct spu_instruction *instr) {
@@ -45,6 +46,8 @@ int instr_set_bitfield(
 	uint32_t arg = get_instr_arg(instr);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
+
+	field &= mask;
 
 	uint32_t shifted_mask = (mask << shift);
 	uint32_t shifted_field = (field << shift);
