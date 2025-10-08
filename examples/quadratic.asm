@@ -1,7 +1,7 @@
-input r0 ; a
-input r1 ; b
-input r2 ; c
-mul r3 r1 r1 ; b ^ 2
+input r0	; a
+input r1	; b
+input r2	; c
+mul r3 r1 r1	; b ^ 2
 ldc r4 $4	; 4
 mul r4 r4 r0	; 4 * a
 mul r4 r4 r2	; 4 * a * c
