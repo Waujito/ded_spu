@@ -14,10 +14,10 @@ uint32_t get_instr_arg(const struct spu_instruction *instr) {
 	assert (instr);
 
 	uint32_t arg = instr->arg;
-#ifdef __LITTLE_ENDIAN
-	arg <<= 8;
-#endif
-	arg = ntohl(arg);
+// #ifdef __LITTLE_ENDIAN
+// 	arg <<= 8;
+// #endif
+// 	arg = ntohl(arg);
 
 	return arg;
 }
@@ -25,11 +25,11 @@ uint32_t get_instr_arg(const struct spu_instruction *instr) {
 void set_instr_arg(struct spu_instruction *instr, uint32_t arg) {
 	assert (instr);
 
-	arg = htonl(arg);
-
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-	arg >>= 8;
-#endif
+// 	arg = htonl(arg);
+//
+// #if __BYTE_ORDER == __LITTLE_ENDIAN
+// 	arg >>= 8;
+// #endif
 	instr->arg = arg;
 }
 
@@ -141,4 +141,13 @@ int32_t bit_extend_signed(uint32_t unum, size_t num_blen) {
 	snum >>= sizeof(snum) * 8 - num_blen;
 	
 	return snum;
+}
+
+int test_integer_bounds(int32_t num, size_t integer_bit_len) {
+	if (	num < -(1 << (integer_bit_len - 1)) ||
+		num >= (1 << (integer_bit_len - 1))) {
+		return S_FAIL;
+	}
+
+	return S_OK;
 }

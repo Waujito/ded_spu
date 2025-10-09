@@ -94,7 +94,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			break;
 		case MUL_OPCODE:
 			TRIPLE_REG_READ__("mul");
-			ctx->registers[dest] = ctx->registers[src1] * ctx->registers[src1];
+			ctx->registers[dest] = ctx->registers[src1] * ctx->registers[src2];
 			break;
 		case SUB_OPCODE:
 			TRIPLE_REG_READ__("sub");
@@ -126,11 +126,8 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "cmp r%d r%d", dest, src);
 
 			{
-				int64_t lnum = 0;
-				int64_t rnum = 0;
-
-				memcpy(&lnum, ctx->registers + dest, sizeof(lnum));
-				memcpy(&rnum, ctx->registers + src, sizeof(rnum));
+				int64_t lnum = (int64_t)ctx->registers[dest];
+				int64_t rnum = (int64_t)ctx->registers[src];
 
 				ctx->RFLAGS = 0;
 
@@ -153,8 +150,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "sqrt r%d r%d", dest, src);
 
 			{
-				int64_t snum = 0;
-				memcpy(&snum, ctx->registers + src, sizeof(snum));
+				int64_t snum = ctx->registers[src];
 
 				if (snum < 0) {
 					_CT_FAIL();
@@ -163,7 +159,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 				double d = (double)snum;
 				d = sqrt(d);
 				snum = (int64_t)d;
-				memcpy(ctx->registers + dest, &snum, sizeof(ctx->registers[0]));
+				ctx->registers[dest] = snum;
 			}
 
 			break;
@@ -194,11 +190,9 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "input r%d", dest);
 			
 		{
-			int64_t snum = 0;
-			if (scanf("%ld", &snum) != 1) {
+			if (scanf("%ld", &ctx->registers[dest]) != 1) {
 				_CT_FAIL();
 			}
-			memcpy(ctx->registers + dest, &snum, sizeof(ctx->registers[0]));
 		}
 
 			break;
@@ -208,7 +202,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 
 			INSTR_LOG(instr, "print r%d", dest);
 
-			printf("%ld\n", (int64_t)(ctx->registers[dest]));
+			printf("%ld\n", ctx->registers[dest]);
 			break;
 
 		case DUMP_OPCODE:
@@ -244,8 +238,6 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 
 	spu_register_num_t dest = 0;
 	spu_register_num_t src = 0;
-	spu_register_num_t src1 = 0;
-	spu_register_num_t src2 = 0;
 
 	switch (instr.opcode.code) {
 		case MOV_OPCODE:
@@ -262,13 +254,14 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 		case LDC_OPCODE:
 			_CT_CHECKED(instr_get_register(&dest, &instr,
 					0, USE_R_HEAD_BIT));
-			_CT_CHECKED(instr_get_bitfield(&unum, LDC_INTEGER_LEN,
+			_CT_CHECKED(instr_get_bitfield(&unum, LDC_INTEGER_BLEN,
 					&instr, FREGISTER_BIT_LEN));
 
-			INSTR_LOG(instr, "ldc r%d $0x%x", dest, unum);
+			snum = bit_extend_signed(unum, LDC_INTEGER_BLEN);
 
-			unum = htole32(unum);
-			ctx->registers[dest] = unum;
+			INSTR_LOG(instr, "ldc r%d $%d", dest, snum);
+
+			ctx->registers[dest] = snum;
 
 			break;
 		case JMP_OPCODE: {

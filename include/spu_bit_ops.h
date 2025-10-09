@@ -61,4 +61,6 @@ static inline int directive_get_register(spu_register_num_t *rn,
 
 int32_t bit_extend_signed(uint32_t unum, size_t num_blen);
 
+int test_integer_bounds(int32_t num, size_t integer_bit_len);
+
 #endif /* SPU_BIT_OPS_H */

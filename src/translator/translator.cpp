@@ -65,6 +65,55 @@ static ssize_t tokenize_opcodeline(char *lineptr, char *argsptrs[MAX_INSTR_ARGS]
 	return n_args;
 }
 
+struct instruction_line {
+	char *lineptr;
+	size_t linesz;
+	char *argsptrs[MAX_INSTR_ARGS];
+	size_t n_args;
+};
+
+static int tokenize_instructions(struct pvector *instr_lines_arr,
+				 char *textbuf, size_t textbuf_len) {
+	int ret = S_OK;
+
+	PVECTOR_CREATE(lines_arr, sizeof(struct text_line));
+	_CT_CHECKED(pvector_read_lines(&lines_arr, 
+			  textbuf, textbuf_len));
+
+	_CT_CHECKED(pvector_init(instr_lines_arr, sizeof(struct instruction_line)));
+	_CT_CHECKED(pvector_set_capacity(instr_lines_arr, lines_arr.len + 1)); 
+
+	for (size_t i = 0; i < lines_arr.len; i++) {
+		struct text_line *line = NULL;
+		_CT_CHECKED(pvector_get(
+			&lines_arr, i, (void **)&line));
+		struct instruction_line instr_line = {
+			.lineptr = line->line_ptr,
+			.linesz = line->line_sz,
+			.argsptrs = {0},
+			.n_args = 0,
+		};
+
+		ssize_t n_args = 0;
+
+		if ((n_args = tokenize_opcodeline(
+			instr_line.lineptr,
+			instr_line.argsptrs)) < 0) {
+			log_error("Invalid line #%zu", i + 1);
+			_CT_FAIL();
+		}
+		instr_line.n_args = (size_t)n_args;
+
+		_CT_CHECKED(pvector_push_back(
+			instr_lines_arr, &instr_line));
+	}
+
+_CT_EXIT_POINT:
+	pvector_destroy(&lines_arr);
+
+	return ret;
+}
+
 typedef int(*op_parsing_fn)(struct translating_context *ctx,
 			    struct spu_instruction *instr);
 
@@ -78,13 +127,6 @@ struct op_cmd {
 struct label_instance {
 	char label[LABEL_MAX_LEN];
 	ssize_t instruction_ptr;
-};
-
-struct instruction_line {
-	char *lineptr;
-	size_t linesz;
-	char *argsptrs[MAX_INSTR_ARGS];
-	size_t n_args;
 };
 
 struct translating_context {
@@ -255,8 +297,8 @@ static int ldc_cmd(struct translating_context *ctx,
 	_CT_CHECKED(parse_register(ctx->argsptrs[1], &dest));
 	_CT_CHECKED(parse_literal_number(ctx->argsptrs[2], &number));
 
-	if (number < 0 || number >= (1 << LDC_INTEGER_LEN)) {
-		log_error("number <%s> is too long or negative", ctx->argsptrs[2]);
+	if (test_integer_bounds(number, LDC_INTEGER_BLEN)) {
+		log_error("number <%s> is too long", ctx->argsptrs[2]);
 		_CT_FAIL();
 	}
 
@@ -265,7 +307,7 @@ static int ldc_cmd(struct translating_context *ctx,
 	_CT_CHECKED(raw_cmd(ctx, instr));
 	_CT_CHECKED(instr_set_register(dest, instr,
 				0, USE_R_HEAD_BIT));
-	_CT_CHECKED(instr_set_bitfield(arg_num, LDC_INTEGER_LEN,
+	_CT_CHECKED(instr_set_bitfield(arg_num, LDC_INTEGER_BLEN,
 				instr, FREGISTER_BIT_LEN));
 
 
@@ -323,8 +365,7 @@ static int parse_jmp_position(	struct translating_context *ctx,
 		_CT_FAIL();
 	}
 
-	if (	relative_jmp < -(1 << (JMP_INTEGER_BLEN - 1)) ||
-		relative_jmp >= (1 << (JMP_INTEGER_BLEN - 1))) {
+	if (test_integer_bounds(relative_jmp, JMP_INTEGER_BLEN)) {
 		log_error("jump number <%d> is too long", relative_jmp);
 		_CT_FAIL();
 	}
@@ -561,7 +602,6 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 
 	char *textbuf = NULL;
 	size_t textbuf_len = 0;
-	struct pvector lines_arr = {0};
 
 	struct translating_context ctx = {
 		.instr_lines_arr = {0},
@@ -576,43 +616,10 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 		.do_second_compilation = 0,
 	};
 
-	size_t nlines = 0;
-
 	_CT_CHECKED(read_file(in_filename, &textbuf, &textbuf_len));
 
-	nlines = count_lines(textbuf, textbuf_len);
-
-	_CT_CHECKED(pvector_read_lines(&lines_arr, 
-			  textbuf, textbuf_len));
-	_CT_CHECKED(pvector_init(&ctx.instr_lines_arr,
-			  sizeof(instruction_line)));
-
-	for (size_t i = 0; i < lines_arr.len; i++) {
-		struct text_line *line = NULL;
-		_CT_CHECKED(pvector_get(
-			&lines_arr, i, (void **)&line));
-		struct instruction_line instr_line = {
-			.lineptr = line->line_ptr,
-			.linesz = line->line_sz,
-			.argsptrs = {0},
-			.n_args = 0,
-		};
-
-		ssize_t n_args = 0;
-
-		if ((n_args = tokenize_opcodeline(
-			instr_line.lineptr,
-			instr_line.argsptrs)) < 0) {
-			log_error("Invalid line #%zu", i + 1);
-			_CT_FAIL();
-		}
-		instr_line.n_args = (size_t)n_args;
-
-		_CT_CHECKED(pvector_push_back(
-			&ctx.instr_lines_arr, &instr_line));
-	}
-
-	pvector_destroy(&lines_arr);
+	_CT_CHECKED(tokenize_instructions(&ctx.instr_lines_arr,
+			textbuf, textbuf_len));
 	
 	_CT_CHECKED(pvector_init(&ctx.labels_table,
 			  sizeof(struct label_instance)));
@@ -637,7 +644,6 @@ _CT_EXIT_POINT:
 	pvector_destroy(&ctx.instructions_arr);
 	pvector_destroy(&ctx.labels_table);
 	pvector_destroy(&ctx.instr_lines_arr);
-	pvector_destroy(&lines_arr);
 	free(textbuf);
 
 	return ret;

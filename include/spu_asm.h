@@ -87,7 +87,7 @@
 
 typedef uint32_t	spu_instruction_t;
 typedef uint8_t		spu_register_num_t;
-typedef uint64_t	spu_data_t;
+typedef int64_t		spu_data_t;
 
 #define LABEL_MAX_LEN (64)
 
@@ -133,7 +133,7 @@ enum spu_opcodes {
 	 * ```
 	 */
 	LDC_OPCODE	= 0x02,
-#define LDC_INTEGER_LEN (20)
+#define LDC_INTEGER_BLEN (20)
 
 	/**
 	 * @brief Jump instruction

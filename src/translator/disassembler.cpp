@@ -14,7 +14,7 @@
 #define SPU_INSTR_MODE_DISASM
 #include "spu_instruction.h"
 
-int DisasmLoop(struct spu_context *ctx) {
+static int DisasmLoop(struct spu_context *ctx) {
 	assert (ctx);
 
 	int ret = S_OK;
