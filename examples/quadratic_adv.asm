@@ -16,7 +16,7 @@ sub r3 r3 r4	; b ^ 2 - 4 * a * c
 ; Tests for negative discriminant
 ldc r6 $0
 cmp r3 r6
-jmp.l .negative_discriminant
+jmp.lt .negative_discriminant
 
 sqrt r3 r3	; sqrt (D)
 ldc r6 $2
