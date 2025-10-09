@@ -89,6 +89,9 @@ typedef uint32_t	spu_instruction_t;
 typedef uint8_t		spu_register_num_t;
 typedef int64_t		spu_data_t;
 
+// First character is '.', next goes letters
+#define LABEL_MIN_LEN (2)
+
 #define LABEL_MAX_LEN (64)
 
 /**

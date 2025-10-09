@@ -182,7 +182,8 @@ static int process_label(struct translating_context *ctx) {
 
 	if (	ctx->n_args != 1 || 
 		*label_name != '.' || 
-		label_len < 3 ||
+		// label_min_len + ':'
+		label_len < LABEL_MIN_LEN + 1 ||
 		label_name[label_len - 1] != ':') {
 		log_error("Invalid label: %s", label_name);
 		_CT_FAIL();
