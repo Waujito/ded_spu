@@ -57,6 +57,52 @@
 #define INSTR_LOG(...) (void)0
 #endif
 
+static inline int do_conditional_jump(
+	struct spu_context *ctx, int condition) {
+	assert (ctx);
+
+	switch (condition) {
+		case UNCONDITIONAL_JMP:
+			break;
+		case EQUALS_JMP:
+			if (!(ctx->RFLAGS & CMP_EQ_FLAG)) {
+				return 0;
+			}
+			break;
+		case NOT_EQUALS_JMP:
+			if ((ctx->RFLAGS & CMP_EQ_FLAG)) {
+				return 0;
+			}
+			break;
+		case GREATER_EQUALS_JMP:
+			if ((ctx->RFLAGS & CMP_SIGN_FLAG)) {
+				return 0;
+			}
+			break;
+		case GREATER_JMP:
+			if ((ctx->RFLAGS & CMP_SIGN_FLAG) ||
+			    (ctx->RFLAGS & CMP_EQ_FLAG)) {
+				return 0;
+			}
+			break;
+		case LESS_EQUALS_JMP:
+			if (!(ctx->RFLAGS & CMP_SIGN_FLAG) &&
+			    !(ctx->RFLAGS & CMP_EQ_FLAG)) {
+				return 0;
+			}
+			break;
+		case LESS_JMP:
+			if (!(ctx->RFLAGS & CMP_SIGN_FLAG)) {
+				return 0;
+			}
+			break;
+		default:
+			return -1;
+	}
+
+	return 1;
+}
+
 #ifdef SPU_INSTR_MODE_DISASM
 static int DisasmDirectiveInstruction(struct spu_context *ctx,
 				      struct spu_instruction instr)
@@ -276,51 +322,19 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 
 			INSTR_LOG(instr, "jmp.$%d $%d", dest, snum);
 
-			switch (dest) {
-				case UNCONDITIONAL_JMP:
-					break;
-				case EQUALS_JMP:
-					if (!(ctx->RFLAGS & CMP_EQ_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				case NOT_EQUALS_JMP:
-					if ((ctx->RFLAGS & CMP_EQ_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				case GREATER_EQUALS_JMP:
-					if ((ctx->RFLAGS & CMP_SIGN_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				case GREATER_JMP:
-					if ((ctx->RFLAGS & CMP_SIGN_FLAG) ||
-					    (ctx->RFLAGS & CMP_EQ_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				case LESS_EQUALS_JMP:
-					if (!(ctx->RFLAGS & CMP_SIGN_FLAG) &&
-					    !(ctx->RFLAGS & CMP_EQ_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				case LESS_JMP:
-					if (!(ctx->RFLAGS & CMP_SIGN_FLAG)) {
-						goto _CT_EXIT_POINT;
-					}
-					break;
-				default:
-					_CT_FAIL();
-			}
-
-			if (new_ip < 0 || (size_t)new_ip > ctx->instr_bufsize) {
+			int status = do_conditional_jump(ctx, dest);
+			if (status < 0) {
 				_CT_FAIL();
+			} else if (status > 0) {
+				if (	new_ip < 0 ||
+					(size_t)new_ip > ctx->instr_bufsize) {
+					_CT_FAIL();
+				}
+
+				ctx->ip = (size_t)new_ip;
 			}
 
-			ctx->ip = (size_t)new_ip;
-
+			
 			break;
 		}
 		case DIRECTIVE_OPCODE:
