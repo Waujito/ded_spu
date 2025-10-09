@@ -14,10 +14,6 @@ uint32_t get_instr_arg(const struct spu_instruction *instr) {
 	assert (instr);
 
 	uint32_t arg = instr->arg;
-// #ifdef __LITTLE_ENDIAN
-// 	arg <<= 8;
-// #endif
-// 	arg = ntohl(arg);
 
 	return arg;
 }
@@ -25,11 +21,6 @@ uint32_t get_instr_arg(const struct spu_instruction *instr) {
 void set_instr_arg(struct spu_instruction *instr, uint32_t arg) {
 	assert (instr);
 
-// 	arg = htonl(arg);
-//
-// #if __BYTE_ORDER == __LITTLE_ENDIAN
-// 	arg >>= 8;
-// #endif
 	instr->arg = arg;
 }
 
