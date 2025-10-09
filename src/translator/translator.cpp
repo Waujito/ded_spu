@@ -21,7 +21,7 @@
 static inline int is_comment_string(char *arg) {
 	assert (arg);
 
-	char *comment_ptr = strchr(arg, ';');
+	char *comment_ptr = strpbrk(arg, ";#");
 	if (comment_ptr) {
 		*comment_ptr = '\0';
 		return 1;
