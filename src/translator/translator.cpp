@@ -149,7 +149,6 @@ struct translating_context {
 
 	const struct op_cmd *op_data;
 	int second_compilation = 1;
-	int do_second_compilation = 1;
 };
 
 static struct label_instance *find_label(struct translating_context *ctx,
@@ -340,8 +339,6 @@ static int parse_jmp_position(	struct translating_context *ctx,
 
 			memcpy(label.label, jmp_str, label_len);
 			label.instruction_ptr = -1;
-
-			ctx->do_second_compilation = 1;
 
 			return S_OK;
 		}
@@ -614,7 +611,6 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 		.labels_table = {0},
 		.op_data = NULL,
 		.second_compilation = 0,
-		.do_second_compilation = 0,
 	};
 
 	_CT_CHECKED(read_file(in_filename, &textbuf, &textbuf_len));
