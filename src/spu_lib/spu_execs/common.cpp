@@ -10,8 +10,68 @@
 OP_EXEC_FN(ldc_exec) {
 	ctx->registers[instr.rdest] = instr.snum;
 
-	return 0;
+	return S_OK;
 }
+
+OP_EXEC_FN(cmp_exec) {
+	int64_t lnum = ctx->registers[instr.rdest];
+	int64_t rnum = ctx->registers[instr.rsrc1];
+
+	ctx->RFLAGS = 0;
+
+	if (lnum == rnum) {
+		ctx->RFLAGS |= CMP_EQ_FLAG;
+	}
+	if (lnum < rnum) {
+		ctx->RFLAGS |= CMP_SIGN_FLAG;
+	}
+
+	return S_OK;
+}
+
+OP_EXEC_FN(rpush_pop_exec) {
+	int ret = S_OK;
+
+	switch (instr.opcode) {
+		case PUSHR_OPCODE:
+			_CT_FAIL_NONZERO(pvector_push_back(
+				&ctx->stack, &(ctx->registers[instr.rdest])));
+
+			break;
+		case POPR_OPCODE:
+			_CT_FAIL_NONZERO(pvector_pop_back(
+				&ctx->stack, &(ctx->registers[instr.rdest])));
+			break;
+		default:
+			_CT_FAIL();
+	}
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+OP_EXEC_FN(simple_io_exec) {
+	int ret = S_OK;
+
+	switch (instr.opcode) {
+		case INPUT_OPCODE:
+			if (scanf("%ld", &ctx->registers[instr.rdest]) != 1) {
+				_CT_FAIL();
+			}
+
+			break;
+		case PRINT_OPCODE:
+			printf("%ld\n", ctx->registers[instr.rdest]);
+			break;
+
+		default:
+			_CT_FAIL();
+	}
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
 
 OP_EXEC_FN(noarg_exec) {
 	switch (instr.opcode) {

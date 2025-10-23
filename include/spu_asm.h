@@ -365,10 +365,8 @@ OP_EXEC_FN(mov_exec);
 OP_EXEC_FN(ldc_exec);
 OP_EXEC_FN(jmp_exec);
 OP_EXEC_FN(call_exec);
-OP_EXEC_FN(pushr_exec);
-OP_EXEC_FN(popr_exec);
-OP_EXEC_FN(input_exec);
-OP_EXEC_FN(print_exec);
+OP_EXEC_FN(rpush_pop_exec);
+OP_EXEC_FN(simple_io_exec);
 OP_EXEC_FN(cmp_exec);
 OP_EXEC_FN(arithm_binary_exec);
 OP_EXEC_FN(arithm_unary_exec);
@@ -386,11 +384,11 @@ static const struct op_cmd op_table[] = {
 	// {"jmp.lt",	LESS_JMP,		OPL_JMP, 	jmp_exec},
 	// {"call",	CALL_OPCODE,		OPL_CALL,	call_exec},
 	// {"ret",		RET_OPCODE,		OPL_NOARG,	noarg_exec},
-	// {"pushr",	PUSHR_OPCODE,		OPL_SINGLE_REG,	pushr_exec},
-	// {"popr",	POPR_OPCODE,		OPL_SINGLE_REG,	popr_exec},
-	// {"input",	INPUT_OPCODE,		OPL_SINGLE_REG,	input_exec},
-	// {"print",	PRINT_OPCODE,		OPL_SINGLE_REG,	print_exec},
-	// {"cmp",		CMP_OPCODE,		OPL_DOUBLE_REG,	cmp_exec},
+	{"pushr",	PUSHR_OPCODE,		OPL_SINGLE_REG,	rpush_pop_exec},
+	{"popr",	POPR_OPCODE,		OPL_SINGLE_REG,	rpush_pop_exec},
+	{"input",	INPUT_OPCODE,		OPL_SINGLE_REG,	simple_io_exec},
+	{"print",	PRINT_OPCODE,		OPL_SINGLE_REG,	simple_io_exec},
+	{"cmp",		CMP_OPCODE,		OPL_DOUBLE_REG,	cmp_exec},
 	{"add",		ADD_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
 	{"mul",		MUL_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
 	{"sub",		SUB_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
