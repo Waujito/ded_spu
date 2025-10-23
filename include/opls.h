@@ -127,6 +127,7 @@ DECLARE_BINASM_PARSERS(idouble_reg);
 DECLARE_BINASM_PARSERS(isingle_reg);
 DECLARE_BINASM_PARSERS(inoarg);
 DECLARE_BINASM_PARSERS(ildc);
+DECLARE_BINASM_PARSERS(imov);
 
 
 struct op_layout {
@@ -148,6 +149,7 @@ static const struct op_layout op_layout_table[] = {
 	OP_LAYOUT_ENTRY(OPL_DOUBLE_REG, idouble_reg),
 	OP_LAYOUT_ENTRY(OPL_TRIPLE_REG, itriple_reg),
 	OP_LAYOUT_ENTRY(OPL_LDC, ildc),
+	OP_LAYOUT_ENTRY(OPL_MOV, imov),
 
 	{0}
 
