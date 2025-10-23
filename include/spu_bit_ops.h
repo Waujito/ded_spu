@@ -71,6 +71,17 @@ static inline int set_directive_opcode(uint32_t field, struct spu_instruction *i
 	return 0;
 }
 
+static inline int get_raw_opcode(uint32_t *field, const struct spu_instruction *instr) {
+	*field = instr->opcode.code;
+
+	return 0;
+}
+static inline int set_raw_opcode(uint32_t field, struct spu_instruction *instr) {
+	instr->opcode.code = field;
+
+	return 0;
+}
+
 int32_t bit_extend_signed(uint32_t unum, size_t num_blen);
 
 int test_integer_bounds(int32_t num, size_t integer_bit_len);

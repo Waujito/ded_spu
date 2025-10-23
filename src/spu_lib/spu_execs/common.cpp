@@ -7,6 +7,12 @@
 #include "math.h"
 
 
+OP_EXEC_FN(ldc_exec) {
+	ctx->registers[instr.rdest] = instr.snum;
+
+	return 0;
+}
+
 OP_EXEC_FN(noarg_exec) {
 	switch (instr.opcode) {
 		case HALT_OPCODE:
@@ -19,8 +25,12 @@ OP_EXEC_FN(noarg_exec) {
 	}
 	return 0;
 }
+
 OP_EXEC_FN(arithm_unary_exec) {
 	switch (instr.opcode) {
+		case MOV_OPCODE:
+			ctx->registers[instr.rdest] = ctx->registers[instr.rsrc1];
+			break;
 		case SQRT_OPCODE:
 			ctx->registers[instr.rdest] = 
 				(int64_t) sqrt((double)ctx->registers[instr.rsrc1]);
@@ -50,6 +60,7 @@ OP_EXEC_FN(arithm_binary_exec) {
 			ctx->registers[instr.rdest] = 
 				ctx->registers[instr.rsrc1] /
 				ctx->registers[instr.rsrc2];
+			break;
 		case MOD_OPCODE:
 			if (ctx->registers[instr.rsrc2] == 0) {
 				return S_FAIL;
@@ -57,8 +68,7 @@ OP_EXEC_FN(arithm_binary_exec) {
 			ctx->registers[instr.rdest] = 
 				ctx->registers[instr.rsrc1] %
 				ctx->registers[instr.rsrc2];
-
-
+			break;
 #undef OPERATION_CASE
 		
 		default:

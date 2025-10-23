@@ -33,7 +33,7 @@ TESTSRC := test/test_bit_ops.cpp
 TESTOBJ := $(TESTSRC:%.cpp=$(BUILD_DIR)/%.o)
 TEST_LIB_APP := $(BUILD_DIR)/test_spu
 
-SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp src/spu_lib/spu.cpp src/spu_lib/translator_parsers.cpp src/spu_lib/opls/double_reg.cpp src/spu_lib/opls/noarg.cpp src/spu_lib/opls/single_reg.cpp src/spu_lib/opls/triple_reg.cpp src/spu_lib/spu_execs/common.cpp
+SPULIB_SRC := src/spu_lib/spu_bit_ops.cpp src/spu_lib/spu.cpp src/spu_lib/translator_parsers.cpp src/spu_lib/opls/double_reg.cpp src/spu_lib/opls/noarg.cpp src/spu_lib/opls/single_reg.cpp src/spu_lib/opls/triple_reg.cpp src/spu_lib/spu_execs/common.cpp src/spu_lib/opls/ldc.cpp
 
 SPULIB_OBJ := $(SPULIB_SRC:%.cpp=$(BUILD_DIR)/%.o)
 SPULIB_STATIC := $(BUILD_DIR)/spulib.a

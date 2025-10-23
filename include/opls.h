@@ -90,6 +90,7 @@ int name##_write_asm(const struct spu_instr_data *instr_data,			\
 	const struct op_cmd *op_cmd = opcode_layout_search(			\
 				instr_data->opcode, opl);			\
 	if (!op_cmd) {								\
+		assert(0 && "op_cmd not found");				\
 		_CT_FAIL();							\
 	}									\
 										\
@@ -122,12 +123,10 @@ static const struct op_cmd *opcode_layout_search(unsigned int opcode,
 }
 
 DECLARE_BINASM_PARSERS(itriple_reg);
-
 DECLARE_BINASM_PARSERS(idouble_reg);
-
 DECLARE_BINASM_PARSERS(isingle_reg);
-
 DECLARE_BINASM_PARSERS(inoarg);
+DECLARE_BINASM_PARSERS(ildc);
 
 
 struct op_layout {
@@ -148,6 +147,7 @@ static const struct op_layout op_layout_table[] = {
 	OP_LAYOUT_ENTRY(OPL_SINGLE_REG, isingle_reg),
 	OP_LAYOUT_ENTRY(OPL_DOUBLE_REG, idouble_reg),
 	OP_LAYOUT_ENTRY(OPL_TRIPLE_REG, itriple_reg),
+	OP_LAYOUT_ENTRY(OPL_LDC, ildc),
 
 	{0}
 

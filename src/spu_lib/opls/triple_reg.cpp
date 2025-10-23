@@ -29,6 +29,10 @@ DEFINE_BINARY_WRITER(itriple_reg, OPL_TRIPLE_REG, {
 });
 
 DEFINE_ASM_PARSER(itriple_reg, OPL_TRIPLE_REG, {
+	if (asm_instr->n_args != 1 + 3) {
+		_CT_FAIL();
+	}
+
 	_CT_CHECKED(parse_register(asm_instr->argsptrs[1], &instr_data->rdest));
 	_CT_CHECKED(parse_register(asm_instr->argsptrs[2], &instr_data->rsrc1));
 	_CT_CHECKED(parse_register(asm_instr->argsptrs[3], &instr_data->rsrc2));

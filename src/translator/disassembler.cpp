@@ -32,11 +32,13 @@ static int disasm_instruction(struct spu_instruction *instr) {
 
 	op_cmd = find_op_cmd_opcode(opcode);
 	if (!op_cmd) {
+		log_error("opcode <%u> not found", opcode);
 		_CT_FAIL();
 	}
 
 	op_layout = find_op_layout(op_cmd->layout);
 	if (!op_layout) {
+		log_error("op layout <%u> not found", op_cmd->layout);
 		_CT_FAIL();
 	}
 
@@ -101,6 +103,7 @@ int main(int argc, const char *argv[]) {
 	}
 
 	if (disasm(binary_filename)) {
+		log_error("Disassembling failure");
 		return EXIT_FAILURE;
 	}
 

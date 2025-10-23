@@ -309,7 +309,6 @@ enum spu_directive_opcodes {
 };
 
 enum instruction_layout {
-	OPL_MOV,
 	OPL_LDC,
 	OPL_JMP,
 	OPL_CALL,
@@ -329,7 +328,7 @@ struct spu_instr_data {
 
 	union {
 		uint32_t unum;
-		uint32_t snum;
+		int32_t snum;
 	};
 };
 
@@ -375,8 +374,8 @@ OP_EXEC_FN(arithm_unary_exec);
 OP_EXEC_FN(noarg_exec);
 
 static const struct op_cmd op_table[] = {
-	// {"mov",		MOV_OPCODE,		OPL_MOV,	mov_exec},
-	// {"ldc",		LDC_OPCODE,		OPL_LDC,	ldc_exec},
+	// {"mov",		MOV_OPCODE,		OPL_DOUBLE_REG,	arithm_unary_exec},
+	{"ldc",		LDC_OPCODE,		OPL_LDC,	ldc_exec},
 	// {"jmp",		JMP_OPCODE,		OPL_JMP, 	jmp_exec},
 	// {"jmp.eq",	JMP_OPCODE,		OPL_JMP, 	jmp_exec},
 	// {"jmp.neq",	NOT_EQUALS_JMP,		OPL_JMP, 	jmp_exec},

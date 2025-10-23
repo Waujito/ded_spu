@@ -12,7 +12,6 @@ DEFINE_BINARY_PARSER(isingle_reg, OPL_SINGLE_REG, {
 });
 
 DEFINE_BINARY_WRITER(isingle_reg, OPL_SINGLE_REG, {
-
 	_CT_CHECKED(directive_set_register(instr_data->rdest, bin_instr,
 				0, USE_R_HEAD_BIT));
 	
@@ -20,6 +19,10 @@ DEFINE_BINARY_WRITER(isingle_reg, OPL_SINGLE_REG, {
 });
 
 DEFINE_ASM_PARSER(isingle_reg, OPL_SINGLE_REG, {
+	if (asm_instr->n_args != 1 + 1) {
+		_CT_FAIL();
+	}
+
 	_CT_CHECKED(parse_register(asm_instr->argsptrs[1], &instr_data->rdest));
 });
 
