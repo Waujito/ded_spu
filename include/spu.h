@@ -10,6 +10,8 @@
 #include "spu_asm.h"
 #include "pvector.h"
 
+#define RET_STACK_MAX_SIZE (1024)
+
 struct spu_context {
 	spu_data_t registers[N_REGISTERS];
 	spu_data_t RFLAGS;
@@ -17,6 +19,7 @@ struct spu_context {
 	size_t instr_bufsize;
 	size_t ip;
 	pvector stack;
+	pvector call_stack;
 };
 
 

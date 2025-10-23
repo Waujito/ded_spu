@@ -159,6 +159,8 @@ enum spu_opcodes {
 #define JMP_INTEGER_OFF  (4)
 #define JMP_INTEGER_BLEN (20)
 
+	CALL_OPCODE	= 0x04,
+
 	/**
 	 * @brief Directive operation
 	 *
@@ -294,6 +296,8 @@ enum spu_directive_opcodes {
 	INPUT_OPCODE	= 0x50,
 	/// Single-register operation
 	PRINT_OPCODE	= 0x51,
+
+	RET_OPCODE	= 0x60,
 
 	/// Compares two registers
 	CMP_OPCODE	= 0x70,

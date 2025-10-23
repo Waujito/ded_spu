@@ -255,6 +255,22 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "dump");
 			SPUDump(ctx, stdout);
 			break;
+		case RET_OPCODE: {
+			INSTR_LOG(instr, "ret");
+
+			uint64_t old_ip = 0;
+			if (pvector_pop_back(&ctx->call_stack, &old_ip)) {
+				_CT_FAIL();
+			}
+			
+			if (old_ip > ctx->instr_bufsize) {
+				_CT_FAIL();
+			}
+
+			ctx->ip = old_ip;
+
+			break;
+		}
 		case HALT_OPCODE:
 			INSTR_LOG(instr, "halt");
 			return S_EXIT;
@@ -337,6 +353,35 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 			
 			break;
 		}
+		case CALL_OPCODE: {
+			_CT_CHECKED(instr_get_bitfield(&unum, JMP_INTEGER_BLEN,
+					&instr, FREGISTER_BIT_LEN));
+
+			snum = bit_extend_signed(unum, JMP_INTEGER_BLEN);
+			int64_t new_ip = (int64_t)ctx->ip + snum;
+
+			INSTR_LOG(instr, "call $%d", snum);
+
+			uint64_t old_ip = (uint64_t)ctx->ip;
+
+			if (ctx->call_stack.len >= RET_STACK_MAX_SIZE) {
+				log_error("call stack overflow");
+				_CT_FAIL();
+			}
+
+			if (pvector_push_back(&ctx->call_stack, &old_ip)) {
+				_CT_FAIL();
+			}
+
+			if (	new_ip < 0 ||
+				(size_t)new_ip > ctx->instr_bufsize) {
+				_CT_FAIL();
+			}
+
+			ctx->ip = (size_t)new_ip;
+
+			break;
+		}	
 		case DIRECTIVE_OPCODE:
 #ifdef SPU_INSTR_MODE_DISASM
 			return DisasmDirectiveInstruction(ctx, instr);

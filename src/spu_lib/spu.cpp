@@ -35,6 +35,10 @@ int SPUCtor(struct spu_context *ctx) {
 		return S_FAIL;
 	}
 
+	if (pvector_init(&ctx->call_stack, sizeof(uint64_t))) {
+		return S_FAIL;
+	}
+
 	return S_OK;
 }
 
@@ -46,6 +50,7 @@ int SPUDtor(struct spu_context *ctx) {
 	ctx->instr_bufsize = 0;
 
 	pvector_destroy(&ctx->stack);
+	pvector_destroy(&ctx->call_stack);
 
 	return S_OK;
 }
@@ -93,7 +98,7 @@ int SPUExecute(struct spu_context *ctx) {
 }
 
 // Dumps first n registers
-#define N_DUMPED_REGISTERS (5)
+#define N_DUMPED_REGISTERS (6)
 
 int SPUDump(struct spu_context *ctx, FILE *out_stream) {
 	assert (ctx);
@@ -112,6 +117,10 @@ int SPUDump(struct spu_context *ctx, FILE *out_stream) {
 
 	DPRINT("\nStack dump:\n");
 	pvector_dump(&ctx->stack, out_stream);
+
+	DPRINT("\nCall stack dump:\n");
+	pvector_dump(&ctx->call_stack, out_stream);
+
 
 	DPRINT("\n}\n\n");
 

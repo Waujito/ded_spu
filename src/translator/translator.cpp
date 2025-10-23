@@ -408,6 +408,32 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
+static int call_cmd(struct translating_context *ctx,
+		   struct spu_instruction *instr) {
+	assert (ctx);	
+	
+	if (ctx->n_args != 1 + 1) {
+		return S_FAIL;
+	}
+
+	char *jmp_str = ctx->argsptrs[1];
+
+	int ret = S_OK;
+
+	uint32_t arg_num = 0;
+
+	_CT_CHECKED(parse_jmp_position(ctx, instr, jmp_str, &arg_num));
+
+	instr->opcode.code	= ctx->op_data->opcode;
+	instr->opcode.reserved1 = 0;
+
+	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
+				instr, FREGISTER_BIT_LEN));
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
 // 1 + 4-bit dest, 5-bit src1, 5-bit src2
 static int triple_reg_cmd(struct translating_context *ctx,
 		   struct spu_instruction *instr) {
@@ -497,6 +523,8 @@ const static struct op_cmd op_data[] = {
 	{"jmp.gt",	GREATER_JMP,		jmp_cmd},
 	{"jmp.leq",	LESS_EQUALS_JMP,	jmp_cmd},
 	{"jmp.lt",	LESS_JMP,		jmp_cmd},
+	{"call",	CALL_OPCODE,		call_cmd},
+	{"ret",		RET_OPCODE,		directive_cmd},
 	{"pushr",	PUSHR_OPCODE,	single_reg_cmd},
 	{"popr",	POPR_OPCODE,	single_reg_cmd},
 	{"input",	INPUT_OPCODE,	single_reg_cmd},
@@ -514,6 +542,19 @@ const static struct op_cmd op_data[] = {
 };
 
 #define S_EMPTY_INSTR (2)
+
+static const struct op_cmd *find_op_cmd(const char *cmd_name) {
+	const struct op_cmd *op_cmd_ptr = op_data;
+
+	while (op_cmd_ptr->cmd_name != NULL) {
+		if (!strcmp(cmd_name, op_cmd_ptr->cmd_name)) {
+			return op_cmd_ptr;
+		}
+		op_cmd_ptr++;
+	}
+
+	return NULL;
+}
 
 static int parse_op(struct translating_context *ctx,
 		    struct spu_instruction *instr) {
@@ -535,16 +576,13 @@ static int parse_op(struct translating_context *ctx,
 		return S_EMPTY_INSTR;
 	}
 
-	const struct op_cmd *op_cmd_ptr = op_data;
-	while (op_cmd_ptr->cmd_name != NULL) {
-		if (!strcmp(cmd, op_cmd_ptr->cmd_name)) {
-			ctx->op_data = op_cmd_ptr;
-			return op_cmd_ptr->fun(ctx, instr);
-		}
-		op_cmd_ptr++;
+	const struct op_cmd *op_cmd_ptr = find_op_cmd(cmd);
+	if (!op_cmd_ptr) {
+		return S_FAIL;
 	}
 
-	return S_FAIL;
+	ctx->op_data = op_cmd_ptr;
+	return op_cmd_ptr->fun(ctx, instr);
 }
 
 static int assembly(struct translating_context *ctx) {
