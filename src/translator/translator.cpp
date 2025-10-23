@@ -77,15 +77,15 @@ static int tokenize_instructions(struct pvector *instr_lines_arr,
 	int ret = S_OK;
 
 	PVECTOR_CREATE(lines_arr, sizeof(struct text_line));
-	_CT_CHECKED(pvector_read_lines(&lines_arr, 
+	_CT_FAIL_NONZERO(pvector_read_lines(&lines_arr,
 			  textbuf, textbuf_len));
 
-	_CT_CHECKED(pvector_init(instr_lines_arr, sizeof(struct instruction_line)));
-	_CT_CHECKED(pvector_set_capacity(instr_lines_arr, lines_arr.len + 1)); 
+	_CT_FAIL_NONZERO(pvector_init(instr_lines_arr, sizeof(struct instruction_line)));
+	_CT_FAIL_NONZERO(pvector_set_capacity(instr_lines_arr, lines_arr.len + 1));
 
 	for (size_t i = 0; i < lines_arr.len; i++) {
 		struct text_line *line = NULL;
-		_CT_CHECKED(pvector_get(
+		_CT_FAIL_NONZERO(pvector_get(
 			&lines_arr, i, (void **)&line));
 		struct instruction_line instr_line = {
 			.lineptr = line->line_ptr,
@@ -104,7 +104,7 @@ static int tokenize_instructions(struct pvector *instr_lines_arr,
 		}
 		instr_line.n_args = (size_t)n_args;
 
-		_CT_CHECKED(pvector_push_back(
+		_CT_FAIL_NONZERO(pvector_push_back(
 			instr_lines_arr, &instr_line));
 	}
 
@@ -209,9 +209,7 @@ static int process_label(struct translating_context *ctx) {
 	memcpy(label.label, label_name, label_len);
 	label.instruction_ptr = (ssize_t)ctx->n_instruction;
 
-	if (pvector_push_back(&ctx->labels_table, &label)) {
-		_CT_FAIL();
-	}
+	_CT_FAIL_NONZERO(pvector_push_back(&ctx->labels_table, &label));
 
 _CT_EXIT_POINT:
 	return ret;
@@ -596,7 +594,7 @@ static int assembly(struct translating_context *ctx) {
 
 	for (size_t i = 0; i < ctx->instr_lines_arr.len; i++) {
 		struct instruction_line *instr_line = NULL;
-		_CT_CHECKED(pvector_get(&ctx->instr_lines_arr,
+		_CT_FAIL_NONZERO(pvector_get(&ctx->instr_lines_arr,
 			  i, (void **)&instr_line));
 
 		struct spu_instruction instr = {0};
@@ -616,7 +614,7 @@ static int assembly(struct translating_context *ctx) {
 			eprintf(">\n");
 #endif /* T_DEBUG */
 			ctx->n_instruction++;
-			_CT_CHECKED(pvector_push_back(
+			_CT_FAIL_NONZERO(pvector_push_back(
 				&ctx->instructions_arr, &instr));
 		}
 
@@ -656,21 +654,21 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 	_CT_CHECKED(tokenize_instructions(&ctx.instr_lines_arr,
 			textbuf, textbuf_len));
 	
-	_CT_CHECKED(pvector_init(&ctx.labels_table,
+	_CT_FAIL_NONZERO(pvector_init(&ctx.labels_table,
 			  sizeof(struct label_instance)));
-	_CT_CHECKED(pvector_init(&ctx.instructions_arr,
+	_CT_FAIL_NONZERO(pvector_init(&ctx.instructions_arr,
 			  sizeof(spu_instruction_t)));
 
 	_CT_CHECKED(assembly(&ctx));
 
 	ctx.second_compilation = 1;
-	_CT_CHECKED(pvector_empty(&ctx.instructions_arr));
+	_CT_FAIL_NONZERO(pvector_empty(&ctx.instructions_arr));
 	ctx.n_instruction = 0;
 	_CT_CHECKED(assembly(&ctx));
 
 	for (size_t i = 0; i < ctx.instructions_arr.len; i++) {
 		spu_instruction_t *instr = NULL;
-		_CT_CHECKED(pvector_get(
+		_CT_FAIL_NONZERO(pvector_get(
 			&ctx.instructions_arr, i, (void **)&instr));
 		fwrite(instr, sizeof(*instr), 1, out_stream);
 	}

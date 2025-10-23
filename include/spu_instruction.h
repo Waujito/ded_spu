@@ -216,8 +216,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 
 			INSTR_LOG(instr, "pushr r%d", dest);
 
-			if (pvector_push_back(&ctx->stack, &(ctx->registers[dest])))
-				_CT_FAIL();
+			_CT_FAIL_NONZERO(pvector_push_back(&ctx->stack, &(ctx->registers[dest])));
 
 			break;
 		case POPR_OPCODE:
@@ -226,8 +225,7 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 
 			INSTR_LOG(instr, "popr r%d", dest);
 
-			if (pvector_pop_back(&ctx->stack, &(ctx->registers[dest])))
-				_CT_FAIL();
+			_CT_FAIL_NONZERO(pvector_pop_back(&ctx->stack, &(ctx->registers[dest])));
 			break;
 		case INPUT_OPCODE:
 			_CT_CHECKED(directive_get_register(&dest, &instr,
@@ -259,9 +257,8 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "ret");
 
 			uint64_t old_ip = 0;
-			if (pvector_pop_back(&ctx->call_stack, &old_ip)) {
-				_CT_FAIL();
-			}
+			_CT_FAIL_NONZERO(
+				pvector_pop_back(&ctx->call_stack, &old_ip));
 			
 			if (old_ip > ctx->instr_bufsize) {
 				_CT_FAIL();
@@ -369,9 +366,9 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 				_CT_FAIL();
 			}
 
-			if (pvector_push_back(&ctx->call_stack, &old_ip)) {
-				_CT_FAIL();
-			}
+
+			_CT_FAIL_NONZERO(
+				pvector_push_back(&ctx->call_stack, &old_ip));
 
 			if (	new_ip < 0 ||
 				(size_t)new_ip > ctx->instr_bufsize) {
