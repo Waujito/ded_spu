@@ -33,7 +33,7 @@ int instr_set_bitfield(
 		return -1;
 	}
 
-	uint32_t mask = (1 << (fieldlen)) - 1;
+	uint32_t mask = (1U << (fieldlen)) - 1;
 	uint32_t arg = get_instr_arg(instr);
 
 	size_t shift = SPU_INSTR_ARG_BITLEN - fieldlen - pos;
@@ -61,7 +61,7 @@ int instr_get_bitfield(
 		return -1;
 	}
 
-	uint32_t mask = (1 << (fieldlen)) - 1;
+	uint32_t mask = (1U << (fieldlen)) - 1;
 
 	uint32_t arg = get_instr_arg(instr);
 

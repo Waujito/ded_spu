@@ -18,8 +18,8 @@ struct spu_context {
 	spu_instruction_t *instr_buf;
 	size_t instr_bufsize;
 	size_t ip;
-	pvector stack;
-	pvector call_stack;
+	struct pvector stack;
+	struct pvector call_stack;
 };
 
 

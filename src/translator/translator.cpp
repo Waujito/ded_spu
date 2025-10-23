@@ -114,15 +114,6 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-typedef int(*op_parsing_fn)(struct translating_context *ctx,
-			    struct spu_instruction *instr);
-
-struct op_cmd {
-	const char *cmd_name;
-	unsigned int opcode;
-	op_parsing_fn fun;
-	op_parsing_fn disasm_fun;
-};
 
 struct label_instance {
 	char label[LABEL_MAX_LEN];
@@ -131,10 +122,10 @@ struct label_instance {
 
 struct translating_context {
 	// Input file with asm text
-	pvector instr_lines_arr;
+	struct pvector instr_lines_arr;
 
 	// An array with binary instructions
-	pvector instructions_arr;	
+	struct pvector instructions_arr;	
 
 	size_t n_instruction;
 
@@ -145,10 +136,20 @@ struct translating_context {
 	FILE *out_stream;
 
 	// Table of labels
-	pvector labels_table;
+	struct pvector labels_table;
 
 	const struct op_cmd *op_data;
-	int second_compilation = 1;
+	int second_compilation;
+};
+
+typedef int(*op_parsing_fn)(struct translating_context *ctx,
+			    struct spu_instruction *instr);
+
+struct op_cmd {
+	const char *cmd_name;
+	unsigned int opcode;
+	op_parsing_fn fun;
+	op_parsing_fn disasm_fun;
 };
 
 static struct label_instance *find_label(struct translating_context *ctx,
@@ -511,7 +512,7 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-const static struct op_cmd op_data[] = {
+static const struct op_cmd op_data[] = {
 	{"mov",		MOV_OPCODE,	mov_cmd},
 	{"ldc",		LDC_OPCODE,	ldc_cmd},
 	{"jmp",		UNCONDITIONAL_JMP,	jmp_cmd},

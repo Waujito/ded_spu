@@ -23,7 +23,7 @@
 int SPUCtor(struct spu_context *ctx) {
 	assert (ctx);
 
-	*ctx = {
+	*ctx = (struct spu_context) {
 		.registers = {0},
 		.instr_buf = NULL,
 		.instr_bufsize = 0,

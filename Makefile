@@ -20,9 +20,9 @@ FLAGS = $(CXXFLAGS)
 LDFLAGS := -lm
 
 # Uncomment next two lines for C compiler
-# OBJCFLAGS := -xc -std=c11
-# FLAGS := $(CFLAGS)
-# CXX := $(CC)
+OBJCFLAGS := -xc -std=c11
+FLAGS := $(CFLAGS)
+CXX := $(CC)
 
 # -flto-odr-type-merging
 

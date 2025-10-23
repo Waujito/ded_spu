@@ -172,8 +172,8 @@ static int SPUExecuteDirective(struct spu_context *ctx, struct spu_instruction i
 			INSTR_LOG(instr, "cmp r%d r%d", dest, src);
 
 			{
-				int64_t lnum = (int64_t)ctx->registers[dest];
-				int64_t rnum = (int64_t)ctx->registers[src];
+				int64_t lnum = ctx->registers[dest];
+				int64_t rnum = ctx->registers[src];
 
 				ctx->RFLAGS = 0;
 
@@ -359,7 +359,7 @@ static int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction
 
 			INSTR_LOG(instr, "call $%d", snum);
 
-			uint64_t old_ip = (uint64_t)ctx->ip;
+			uint64_t old_ip = ctx->ip;
 
 			if (ctx->call_stack.len >= RET_STACK_MAX_SIZE) {
 				log_error("call stack overflow");
