@@ -12,6 +12,8 @@
 
 #define RET_STACK_MAX_SIZE (1024)
 
+#define S_HALT (1)
+
 struct spu_context {
 	spu_data_t registers[N_REGISTERS];
 	spu_data_t RFLAGS;

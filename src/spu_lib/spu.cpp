@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "spu.h"
+#include "opls.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
@@ -70,6 +71,45 @@ int SPULoadBinary(struct spu_context *ctx, const char *filename) {
 	ctx->instr_buf = instr_buf;
 	ctx->instr_bufsize = instr_bufsize;
 	ctx->ip = 0;
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr) {
+	assert (ctx);
+
+	uint32_t opcode = instr.opcode.code;
+	int ret = S_OK;
+	const struct op_cmd *op_cmd = NULL;
+	const struct op_layout *op_layout = NULL;
+
+
+	if (opcode == DIRECTIVE_OPCODE) {
+		_CT_CHECKED(get_directive_opcode(&opcode, &instr));
+	}
+
+	op_cmd = find_op_cmd_opcode(opcode);
+	if (!op_cmd) {
+		_CT_FAIL();
+	}
+
+	op_layout = find_op_layout(op_cmd->layout);
+	if (!op_layout) {
+		_CT_FAIL();
+	}
+
+	{
+		struct spu_instr_data instr_data = {0};
+		_CT_CHECKED(op_layout->parse_bin_fn(&instr, &instr_data));
+#ifdef _DEBUG
+		fprintf(stdout, "Executing <");
+		_CT_CHECKED(op_layout->write_asm_fn(&instr_data, stdout));
+		fprintf(stdout, ">\n");
+#endif
+		
+		return op_cmd->exec_fun(ctx, instr_data);
+	}
 
 _CT_EXIT_POINT:
 	return ret;

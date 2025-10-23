@@ -8,11 +8,48 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define SPU_DISASM_MODE
+#include "opls.h"
+#include "spu_bit_ops.h"
+
+// #define SPU_DISASM_MODE
 #include "spu.h"
 
-#define SPU_INSTR_MODE_DISASM
-#include "spu_instruction.h"
+// #define SPU_INSTR_MODE_DISASM
+// #include "spu_instruction.h"
+
+static int disasm_instruction(struct spu_instruction *instr) {
+	assert (instr);
+
+	uint32_t opcode = instr->opcode.code;
+	int ret = S_OK;
+	const struct op_cmd *op_cmd = NULL;
+	const struct op_layout *op_layout = NULL;
+
+
+	if (opcode == DIRECTIVE_OPCODE) {
+		_CT_CHECKED(get_directive_opcode(&opcode, instr));
+	}
+
+	op_cmd = find_op_cmd_opcode(opcode);
+	if (!op_cmd) {
+		_CT_FAIL();
+	}
+
+	op_layout = find_op_layout(op_cmd->layout);
+	if (!op_layout) {
+		_CT_FAIL();
+	}
+
+	{
+		struct spu_instr_data instr_data = {0};
+		_CT_CHECKED(op_layout->parse_bin_fn(instr, &instr_data));
+		_CT_CHECKED(op_layout->write_asm_fn(&instr_data, stdout));
+		fprintf(stdout, "\n");
+	}
+
+_CT_EXIT_POINT:
+	return ret;
+}
 
 static int DisasmLoop(struct spu_context *ctx) {
 	assert (ctx);
@@ -25,7 +62,7 @@ static int DisasmLoop(struct spu_context *ctx) {
 		};
 		ctx->ip++;
 
-		ret = DisasmInstruction(ctx, instr);
+		ret = disasm_instruction(&instr);
 		if (ret) {
 			if (ret < 0) {
 				return S_FAIL;

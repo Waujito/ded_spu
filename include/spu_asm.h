@@ -308,4 +308,110 @@ enum spu_directive_opcodes {
 	HALT_OPCODE	= 0xFF,
 };
 
+enum instruction_layout {
+	OPL_MOV,
+	OPL_LDC,
+	OPL_JMP,
+	OPL_CALL,
+	OPL_NOARG,
+	OPL_SINGLE_REG,
+	OPL_DOUBLE_REG,
+	OPL_TRIPLE_REG,
+};
+
+struct spu_instr_data {
+	uint32_t opcode;
+	enum instruction_layout layout;
+
+	spu_register_num_t rdest;
+	spu_register_num_t rsrc1;
+	spu_register_num_t rsrc2;
+
+	union {
+		uint32_t unum;
+		uint32_t snum;
+	};
+};
+
+struct spu_context;
+typedef int (*exec_instruction_fn)(struct spu_context *ctx, struct spu_instr_data instr);
+
+struct op_cmd {
+	const char *cmd_name;
+	unsigned int opcode;
+	enum instruction_layout layout;
+	exec_instruction_fn exec_fun;
+};
+
+struct translating_context;
+
+
+struct asm_instruction {
+	size_t n_args;
+	char **argsptrs;
+	const struct op_cmd *op_cmd;
+	const char *op_arg;
+
+	int is_label;
+	int is_empty;
+
+	struct translating_context *ctx;
+};
+
+#define OP_EXEC_FN(name)						\
+	int name(struct spu_context *ctx, struct spu_instr_data instr)
+
+OP_EXEC_FN(mov_exec);
+OP_EXEC_FN(ldc_exec);
+OP_EXEC_FN(jmp_exec);
+OP_EXEC_FN(call_exec);
+OP_EXEC_FN(pushr_exec);
+OP_EXEC_FN(popr_exec);
+OP_EXEC_FN(input_exec);
+OP_EXEC_FN(print_exec);
+OP_EXEC_FN(cmp_exec);
+OP_EXEC_FN(arithm_binary_exec);
+OP_EXEC_FN(arithm_unary_exec);
+OP_EXEC_FN(noarg_exec);
+
+static const struct op_cmd op_table[] = {
+	// {"mov",		MOV_OPCODE,		OPL_MOV,	mov_exec},
+	// {"ldc",		LDC_OPCODE,		OPL_LDC,	ldc_exec},
+	// {"jmp",		JMP_OPCODE,		OPL_JMP, 	jmp_exec},
+	// {"jmp.eq",	JMP_OPCODE,		OPL_JMP, 	jmp_exec},
+	// {"jmp.neq",	NOT_EQUALS_JMP,		OPL_JMP, 	jmp_exec},
+	// {"jmp.geq",	GREATER_EQUALS_JMP,	OPL_JMP, 	jmp_exec},
+	// {"jmp.gt",	GREATER_JMP,		OPL_JMP, 	jmp_exec},
+	// {"jmp.leq",	LESS_EQUALS_JMP,	OPL_JMP, 	jmp_exec},
+	// {"jmp.lt",	LESS_JMP,		OPL_JMP, 	jmp_exec},
+	// {"call",	CALL_OPCODE,		OPL_CALL,	call_exec},
+	// {"ret",		RET_OPCODE,		OPL_NOARG,	noarg_exec},
+	// {"pushr",	PUSHR_OPCODE,		OPL_SINGLE_REG,	pushr_exec},
+	// {"popr",	POPR_OPCODE,		OPL_SINGLE_REG,	popr_exec},
+	// {"input",	INPUT_OPCODE,		OPL_SINGLE_REG,	input_exec},
+	// {"print",	PRINT_OPCODE,		OPL_SINGLE_REG,	print_exec},
+	// {"cmp",		CMP_OPCODE,		OPL_DOUBLE_REG,	cmp_exec},
+	{"add",		ADD_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
+	{"mul",		MUL_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
+	{"sub",		SUB_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
+	{"div",		DIV_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
+	{"mod",		MOD_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
+	{"sqrt",	SQRT_OPCODE,		OPL_DOUBLE_REG,	arithm_unary_exec},
+	{"dump",	DUMP_OPCODE,		OPL_NOARG,	noarg_exec},
+	{"halt",	HALT_OPCODE,		OPL_NOARG, 	noarg_exec},
+	{0}
+};
+
+static inline const struct op_cmd *find_op_cmd_opcode(unsigned int opcode) {
+	const struct op_cmd *op_cmd_ptr = op_table;
+
+	while (op_cmd_ptr->cmd_name != NULL) {
+		if (op_cmd_ptr->opcode == opcode) {
+			return op_cmd_ptr;
+		}
+		op_cmd_ptr++;
+	}
+
+	return NULL;
+}
 #endif /* SPU_ASM_H */

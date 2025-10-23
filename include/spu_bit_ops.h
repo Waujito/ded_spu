@@ -59,6 +59,18 @@ static inline int directive_get_register(spu_register_num_t *rn,
 			   pos + DIRECTIVE_INSTR_BITLEN, spec_head_bit);
 }
 
+static inline int get_directive_opcode(uint32_t *field, const struct spu_instruction *instr) {
+	return instr_get_bitfield(field, DIRECTIVE_INSTR_BITLEN, instr, 0);
+}
+static inline int set_directive_opcode(uint32_t field, struct spu_instruction *instr) {
+	if (instr_set_bitfield(field, DIRECTIVE_INSTR_BITLEN, instr, 0) < 0)
+		return -1;
+
+	instr->opcode.code = DIRECTIVE_OPCODE;
+
+	return 0;
+}
+
 int32_t bit_extend_signed(uint32_t unum, size_t num_blen);
 
 int test_integer_bounds(int32_t num, size_t integer_bit_len);
