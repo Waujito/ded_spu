@@ -10,13 +10,9 @@
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
-#define SPU_INSTR_MODE_EXEC
-
 #ifdef _DEBUG
 #define DEBUG_INSTRUCTIONS
 #endif
-
-#include "spu_instruction.h"
 
 #include "ctio.h"
 
@@ -98,7 +94,7 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 	{
 		struct spu_instr_data instr_data = {0};
 		_CT_CHECKED(op_cmd->layout->parse_bin_fn(&instr, &instr_data));
-#ifdef _DEBUG
+#ifdef DEBUG_INSTRUCTIONS
 		fprintf(stdout, "Executing <");
 		_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
 		fprintf(stdout, ">\n");

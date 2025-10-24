@@ -116,133 +116,6 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-
-/*
-
-static int raw_cmd(struct asm_instruction *asm_instr,
-		   struct spu_instruction *bin_instr) {
-	assert (asm_instr);
-	assert (bin_instr);
-
-	unsigned int opcode = asm_instr->op_cmd->opcode;
-	assert (opcode <= MAX_BASE_OPCODE);
-
-	bin_instr->opcode.code	= opcode;
-	bin_instr->opcode.reserved1 = 0;
-
-	return S_OK;
-}
-
-static int mov_cmd(struct asm_instruction *asm_instr,
-		   struct spu_instruction *bin_instr) {
-	assert (asm_instr);
-	assert (bin_instr);
-	
-	if (asm_instr->n_args != 1 + 2) {
-		return S_FAIL;
-	}	
-
-	int ret = S_OK;
-
-	spu_register_num_t dest = 0;
-	spu_register_num_t src = 0;
-
-	_CT_CHECKED(parse_register(asm_instr->argsptrs[1], &dest));
-	_CT_CHECKED(parse_register(asm_instr->argsptrs[2], &src));
-
-	_CT_CHECKED(raw_cmd(asm_instr, bin_instr));
-	_CT_CHECKED(instr_set_register(dest, bin_instr,
-				0, USE_R_HEAD_BIT));
-	_CT_CHECKED(instr_set_bitfield(0, MOV_RESERVED_FIELD_LEN,
-				bin_instr, FREGISTER_BIT_LEN));
-	_CT_CHECKED(instr_set_register(src, bin_instr,
-				FREGISTER_BIT_LEN + MOV_RESERVED_FIELD_LEN, NO_R_HEAD_BIT));
-
-_CT_EXIT_POINT:
-	return ret;
-}
-
-static int ldc_cmd(struct asm_instruction *asm_instr,
-		   struct spu_instruction *bin_instr) {
-	assert (asm_instr);	
-	assert (bin_instr);	
-	
-	if (asm_instr->n_args != 1 + 2) {
-		return S_FAIL;
-	}
-
-	int ret = S_OK;
-
-	spu_register_num_t dest = 0;
-	int32_t number = 0;
-	uint32_t arg_num = 0;
-
-	_CT_CHECKED(parse_register(asm_instr->argsptrs[1], &dest));
-	_CT_CHECKED(parse_literal_number(asm_instr->argsptrs[2], &number));
-
-	if (test_integer_bounds(number, LDC_INTEGER_BLEN)) {
-		log_error("number <%s> is too long", asm_instr->argsptrs[2]);
-		_CT_FAIL();
-	}
-
-	arg_num = (uint32_t)number;
-
-	_CT_CHECKED(raw_cmd(asm_instr, bin_instr));
-	_CT_CHECKED(instr_set_register(dest, bin_instr,
-				0, USE_R_HEAD_BIT));
-	_CT_CHECKED(instr_set_bitfield(arg_num, LDC_INTEGER_BLEN,
-				bin_instr, FREGISTER_BIT_LEN));
-
-_CT_EXIT_POINT:
-	return ret;
-}
-
-static struct label_instance *find_label(struct translating_context *ctx,
-					 const char *label_name) {
-	assert (ctx);
-	assert (label_name);
-
-	for (size_t i = 0; i < ctx->labels_table.len; i++) {
-		struct label_instance *flabel = NULL;
-		if (pvector_get(&(ctx->labels_table), i, (void **)&flabel)) {
-			return NULL;
-		}
-
-		if (!strcmp(flabel->label, label_name)) {
-			return flabel;
-		}
-	}
-
-	return NULL;
-}
-
-static int call_cmd(struct asm_instruction *asm_instr,
-		    struct spu_instruction *bin_instr) {
-	assert (asm_instr);
-	assert (bin_instr);
-	
-	if (asm_instr->n_args != 1 + 1) {
-		return S_FAIL;
-	}
-
-	char *jmp_str = asm_instr->argsptrs[1];
-
-	int ret = S_OK;
-
-	uint32_t arg_num = 0;
-
-	_CT_CHECKED(parse_jmp_position(asm_instr, bin_instr, jmp_str, &arg_num));
-
-	_CT_CHECKED(raw_cmd(asm_instr, bin_instr));
-
-	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
-				bin_instr, FREGISTER_BIT_LEN));
-
-_CT_EXIT_POINT:
-	return ret;
-}
-*/
-
 static const struct op_cmd *find_op_cmd(const char *cmd_name) {
 	const struct op_cmd *op_cmd_ptr = op_table;
 
@@ -383,17 +256,12 @@ static int assembly(struct translating_context *ctx) {
 				_CT_FAIL();
 			}
 		}
-
-
 	}
 
 _CT_EXIT_POINT:
 	return ret;
 }
 
-/**
- * The in_stream should be seekable
- */
 static int parse_text(const char *in_filename, FILE *out_stream) {
 	assert (in_filename);
 	assert (out_stream);

@@ -10,11 +10,7 @@
 
 #include "spu_bit_ops.h"
 
-// #define SPU_DISASM_MODE
 #include "spu.h"
-
-// #define SPU_INSTR_MODE_DISASM
-// #include "spu_instruction.h"
 
 static int disasm_instruction(struct spu_instruction *instr) {
 	assert (instr);
