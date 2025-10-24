@@ -4,7 +4,7 @@
 #include "opls.h"
 #include "translator_parsers.h"
 
-DEFINE_BINARY_PARSER(ildc, OPL_LDC, {
+DEFINE_BINARY_PARSER(ldc, {
 	_CT_CHECKED(instr_get_register(&instr_data->rdest, bin_instr,
 				0, USE_R_HEAD_BIT));
 	{
@@ -18,7 +18,7 @@ DEFINE_BINARY_PARSER(ildc, OPL_LDC, {
 	_CT_CHECKED(get_raw_opcode(&instr_data->opcode, bin_instr));
 });
 
-DEFINE_BINARY_WRITER(ildc, OPL_LDC, {
+DEFINE_BINARY_WRITER(ldc, {
 
 	_CT_CHECKED(instr_set_register(instr_data->rdest, bin_instr,
 				0, USE_R_HEAD_BIT));
@@ -33,7 +33,7 @@ DEFINE_BINARY_WRITER(ildc, OPL_LDC, {
 });
 
 
-DEFINE_ASM_PARSER(ildc, OPL_LDC, {
+DEFINE_ASM_PARSER(ldc, {
 	if (asm_instr->n_args != 1 + 2) {
 		_CT_FAIL();
 	}
@@ -48,7 +48,9 @@ DEFINE_ASM_PARSER(ildc, OPL_LDC, {
 });
 
 
-DEFINE_ASM_WRITER(ildc, OPL_LDC, {
+DEFINE_ASM_WRITER(ldc, {
 	status = fprintf(out_stream, "%s r%d $%d", op_cmd->cmd_name,
 			instr_data->rdest, instr_data->snum);
 });
+
+DEFINE_BINASM_PARSERS(ldc, 0);

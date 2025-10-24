@@ -1,7 +1,6 @@
 #include <assert.h>
 #include "spu_asm.h"
 #include "spu_bit_ops.h"
-#include "opls.h"
 #include "translator_parsers.h"
 #include "spu.h"
 #include "math.h"

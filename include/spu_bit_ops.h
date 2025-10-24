@@ -77,7 +77,7 @@ static inline int get_raw_opcode(uint32_t *field, const struct spu_instruction *
 	return 0;
 }
 static inline int set_raw_opcode(uint32_t field, struct spu_instruction *instr) {
-	instr->opcode.code = field;
+	instr->opcode.code = (field & 0x3F);
 
 	return 0;
 }

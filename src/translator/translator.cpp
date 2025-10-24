@@ -14,7 +14,6 @@
 #include "translator.h"
 #include "pvector.h"
 #include "ctio.h"
-#include "opls.h"
 
 #ifdef _DEBUG
 #define T_DEBUG
@@ -360,16 +359,10 @@ static int assemble_instruction(struct asm_instruction *asm_instr) {
 
 	const struct op_cmd *op_cmd = asm_instr->op_cmd;
 
-	const struct op_layout *oplt = find_op_layout(op_cmd->layout);
-
 	struct spu_instr_data instr_data = {0};
 
-	if (!oplt) {
-		_CT_FAIL();
-	}
-
-	_CT_CHECKED(oplt->parse_asm_fn(asm_instr, &instr_data));
-	_CT_CHECKED(oplt->write_bin_fn(&instr_data, &bin_instr));
+	_CT_CHECKED(op_cmd->layout->parse_asm_fn(asm_instr, &instr_data));
+	_CT_CHECKED(op_cmd->layout->write_bin_fn(&instr_data, &bin_instr));
 
 #ifdef T_DEBUG
 	eprintf("Writing instruction: <0x");

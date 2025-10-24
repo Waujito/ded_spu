@@ -308,20 +308,11 @@ enum spu_directive_opcodes {
 	HALT_OPCODE	= 0xFF,
 };
 
-enum instruction_layout {
-	OPL_MOV,
-	OPL_LDC,
-	OPL_JMP,
-	OPL_CALL,
-	OPL_NOARG,
-	OPL_SINGLE_REG,
-	OPL_DOUBLE_REG,
-	OPL_TRIPLE_REG,
-};
+struct op_layout;
 
 struct spu_instr_data {
 	uint32_t opcode;
-	enum instruction_layout layout;
+	const struct op_layout *layout;
 
 	union {
 		spu_register_num_t rdest;
@@ -341,13 +332,6 @@ struct spu_instr_data {
 struct spu_context;
 typedef int (*exec_instruction_fn)(struct spu_context *ctx, struct spu_instr_data instr);
 
-struct op_cmd {
-	const char *cmd_name;
-	unsigned int opcode;
-	enum instruction_layout layout;
-	exec_instruction_fn exec_fun;
-};
-
 struct translating_context;
 
 struct asm_instruction {
@@ -361,6 +345,42 @@ struct asm_instruction {
 	size_t nline;
 
 	struct translating_context *ctx;
+};
+
+typedef int (*parse_binary_fn)(const struct spu_instruction *bin_instr,
+			       struct spu_instr_data *instr_data);
+typedef int (*write_binary_fn)(const struct spu_instr_data *instr_data,
+			       struct spu_instruction *bin_instr);
+typedef int (*parse_asm_fn)(const struct asm_instruction *asm_instr,
+			       struct spu_instr_data *instr_data);
+typedef int (*write_asm_fn)(const struct spu_instr_data *instr_data,
+			       FILE *out_stream);
+
+struct op_layout {
+	int is_directive;
+
+	parse_binary_fn parse_bin_fn;
+	write_binary_fn write_bin_fn;
+	parse_asm_fn parse_asm_fn;
+	write_asm_fn write_asm_fn;
+};
+
+#define DECLARE_BINASM_PARSERS(name)				\
+extern const struct op_layout opl_##name;
+
+DECLARE_BINASM_PARSERS(triple_reg);
+DECLARE_BINASM_PARSERS(double_reg);
+DECLARE_BINASM_PARSERS(single_reg);
+DECLARE_BINASM_PARSERS(noarg);
+DECLARE_BINASM_PARSERS(ldc);
+DECLARE_BINASM_PARSERS(mov);
+DECLARE_BINASM_PARSERS(jmp);
+
+struct op_cmd {
+	const char *cmd_name;
+	unsigned int opcode;
+	const struct op_layout *layout;
+	exec_instruction_fn exec_fun;
 };
 
 #define OP_EXEC_FN(name)						\
@@ -378,32 +398,33 @@ OP_EXEC_FN(arithm_unary_exec);
 OP_EXEC_FN(noarg_exec);
 
 static const struct op_cmd op_table[] = {
-	{"mov",		MOV_OPCODE,		OPL_MOV,	arithm_unary_exec},
-	{"ldc",		LDC_OPCODE,		OPL_LDC,	ldc_exec},
-	{"jmp",		JMP_OPCODE,		OPL_JMP, 	jmp_exec},
+	{"mov",		MOV_OPCODE,		&opl_mov,		arithm_unary_exec},
+	{"ldc",		LDC_OPCODE,		&opl_ldc,		ldc_exec},
+	{"jmp",		JMP_OPCODE,		&opl_jmp, 		jmp_exec},
 	// {"call",	CALL_OPCODE,		OPL_CALL,	call_exec},
 	// {"ret",		RET_OPCODE,		OPL_NOARG,	noarg_exec},
-	{"pushr",	PUSHR_OPCODE,		OPL_SINGLE_REG,	rpush_pop_exec},
-	{"popr",	POPR_OPCODE,		OPL_SINGLE_REG,	rpush_pop_exec},
-	{"input",	INPUT_OPCODE,		OPL_SINGLE_REG,	simple_io_exec},
-	{"print",	PRINT_OPCODE,		OPL_SINGLE_REG,	simple_io_exec},
-	{"cmp",		CMP_OPCODE,		OPL_DOUBLE_REG,	cmp_exec},
-	{"add",		ADD_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
-	{"mul",		MUL_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
-	{"sub",		SUB_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
-	{"div",		DIV_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
-	{"mod",		MOD_OPCODE,		OPL_TRIPLE_REG,	arithm_binary_exec},
-	{"sqrt",	SQRT_OPCODE,		OPL_DOUBLE_REG,	arithm_unary_exec},
-	{"dump",	DUMP_OPCODE,		OPL_NOARG,	noarg_exec},
-	{"halt",	HALT_OPCODE,		OPL_NOARG, 	noarg_exec},
+	{"pushr",	PUSHR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
+	{"popr",	POPR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
+	{"input",	INPUT_OPCODE,		&opl_single_reg,	simple_io_exec},
+	{"print",	PRINT_OPCODE,		&opl_single_reg,	simple_io_exec},
+	{"cmp",		CMP_OPCODE,		&opl_double_reg,	cmp_exec},
+	{"add",		ADD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"mul",		MUL_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"sub",		SUB_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"div",		DIV_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"mod",		MOD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"sqrt",	SQRT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
+	{"dump",	DUMP_OPCODE,		&opl_noarg,		noarg_exec},
+	{"halt",	HALT_OPCODE,		&opl_noarg, 		noarg_exec},
 	{0}
 };
 
-static inline const struct op_cmd *find_op_cmd_opcode(unsigned int opcode) {
+static inline const struct op_cmd *find_op_cmd_opcode(unsigned int opcode, int is_directive) {
 	const struct op_cmd *op_cmd_ptr = op_table;
 
 	while (op_cmd_ptr->cmd_name != NULL) {
-		if (op_cmd_ptr->opcode == opcode) {
+		if (op_cmd_ptr->opcode == opcode &&
+			op_cmd_ptr->layout->is_directive == is_directive) {
 			return op_cmd_ptr;
 		}
 		op_cmd_ptr++;

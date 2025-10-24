@@ -7,7 +7,6 @@
 #include <stdlib.h>
 
 #include "spu.h"
-#include "opls.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 
@@ -82,29 +81,26 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 	uint32_t opcode = instr.opcode.code;
 	int ret = S_OK;
 	const struct op_cmd *op_cmd = NULL;
-	const struct op_layout *op_layout = NULL;
+	int is_directive = 0;
 
 
 	if (opcode == DIRECTIVE_OPCODE) {
+		is_directive = 1;
+
 		_CT_CHECKED(get_directive_opcode(&opcode, &instr));
 	}
 
-	op_cmd = find_op_cmd_opcode(opcode);
+	op_cmd = find_op_cmd_opcode(opcode, is_directive);
 	if (!op_cmd) {
-		_CT_FAIL();
-	}
-
-	op_layout = find_op_layout(op_cmd->layout);
-	if (!op_layout) {
 		_CT_FAIL();
 	}
 
 	{
 		struct spu_instr_data instr_data = {0};
-		_CT_CHECKED(op_layout->parse_bin_fn(&instr, &instr_data));
+		_CT_CHECKED(op_cmd->layout->parse_bin_fn(&instr, &instr_data));
 #ifdef _DEBUG
 		fprintf(stdout, "Executing <");
-		_CT_CHECKED(op_layout->write_asm_fn(&instr_data, stdout));
+		_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
 		fprintf(stdout, ">\n");
 #endif
 		

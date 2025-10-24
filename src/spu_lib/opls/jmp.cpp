@@ -6,7 +6,7 @@
 #include "translator_parsers.h"
 #include "translator.h"
 
-DEFINE_BINARY_PARSER(ijmp, OPL_JMP, {
+DEFINE_BINARY_PARSER(jmp, {
 	_CT_CHECKED(instr_get_register(&instr_data->jmp_condition, bin_instr,
 				0, USE_R_HEAD_BIT));
 	{
@@ -20,7 +20,7 @@ DEFINE_BINARY_PARSER(ijmp, OPL_JMP, {
 	_CT_CHECKED(get_raw_opcode(&instr_data->opcode, bin_instr));
 });
 
-DEFINE_BINARY_WRITER(ijmp, OPL_JMP, {
+DEFINE_BINARY_WRITER(jmp, {
 	// !!! Setts flags instead of registers !!!
 	_CT_CHECKED(instr_set_register(instr_data->jmp_condition,
 			bin_instr, 0, USE_R_HEAD_BIT));
@@ -143,7 +143,7 @@ static int parse_jmp_condition(const struct asm_instruction *asm_instr,
 	return S_FAIL;
 }
 
-DEFINE_ASM_PARSER(ijmp, OPL_JMP, {
+DEFINE_ASM_PARSER(jmp, {
 	if (asm_instr->n_args != 1 + 1) {
 		_CT_FAIL();
 	}
@@ -155,7 +155,7 @@ DEFINE_ASM_PARSER(ijmp, OPL_JMP, {
 	_CT_CHECKED(parse_jmp_position(asm_instr, jmp_str, &instr_data->jmp_position));
 });
 
-DEFINE_ASM_WRITER(ijmp, OPL_JMP, {
+DEFINE_ASM_WRITER(jmp, {
 	if (!instr_data->jmp_condition) {
 		status = fprintf(out_stream, "%s $%d", op_cmd->cmd_name,
 			instr_data->jmp_position);
@@ -177,3 +177,6 @@ DEFINE_ASM_WRITER(ijmp, OPL_JMP, {
 
 	}
 });
+
+
+DEFINE_BINASM_PARSERS(jmp, 0);

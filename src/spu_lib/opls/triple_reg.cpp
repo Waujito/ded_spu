@@ -5,7 +5,7 @@
 #include "translator_parsers.h"
 
 
-DEFINE_BINARY_PARSER(itriple_reg, OPL_TRIPLE_REG, {
+DEFINE_BINARY_PARSER(triple_reg, {
 	_CT_CHECKED(directive_get_register(&instr_data->rdest, bin_instr,
 				0, USE_R_HEAD_BIT));
 	_CT_CHECKED(directive_get_register(&instr_data->rsrc1, bin_instr,
@@ -16,7 +16,7 @@ DEFINE_BINARY_PARSER(itriple_reg, OPL_TRIPLE_REG, {
 	_CT_CHECKED(get_directive_opcode(&instr_data->opcode, bin_instr));
 });
 
-DEFINE_BINARY_WRITER(itriple_reg, OPL_TRIPLE_REG, {
+DEFINE_BINARY_WRITER(triple_reg, {
 
 	_CT_CHECKED(directive_set_register(instr_data->rdest, bin_instr,
 				0, USE_R_HEAD_BIT));
@@ -28,7 +28,7 @@ DEFINE_BINARY_WRITER(itriple_reg, OPL_TRIPLE_REG, {
 	_CT_CHECKED(set_directive_opcode(instr_data->opcode, bin_instr));
 });
 
-DEFINE_ASM_PARSER(itriple_reg, OPL_TRIPLE_REG, {
+DEFINE_ASM_PARSER(triple_reg, {
 	if (asm_instr->n_args != 1 + 3) {
 		_CT_FAIL();
 	}
@@ -39,7 +39,10 @@ DEFINE_ASM_PARSER(itriple_reg, OPL_TRIPLE_REG, {
 });
 
 
-DEFINE_ASM_WRITER(itriple_reg, OPL_TRIPLE_REG, {
+DEFINE_ASM_WRITER(triple_reg, {
 	status = fprintf(out_stream, "%s r%d r%d r%d", op_cmd->cmd_name,
 			instr_data->rdest, instr_data->rsrc1, instr_data->rsrc2);
 });
+
+
+DEFINE_BINASM_PARSERS(triple_reg, 1);
