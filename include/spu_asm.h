@@ -390,6 +390,7 @@ OP_EXEC_FN(mov_exec);
 OP_EXEC_FN(ldc_exec);
 OP_EXEC_FN(jmp_exec);
 OP_EXEC_FN(call_exec);
+OP_EXEC_FN(ret_exec);
 OP_EXEC_FN(rpush_pop_exec);
 OP_EXEC_FN(simple_io_exec);
 OP_EXEC_FN(cmp_exec);
@@ -401,8 +402,8 @@ static const struct op_cmd op_table[] = {
 	{"mov",		MOV_OPCODE,		&opl_mov,		arithm_unary_exec},
 	{"ldc",		LDC_OPCODE,		&opl_ldc,		ldc_exec},
 	{"jmp",		JMP_OPCODE,		&opl_jmp, 		jmp_exec},
-	// {"call",	CALL_OPCODE,		OPL_CALL,	call_exec},
-	// {"ret",		RET_OPCODE,		OPL_NOARG,	noarg_exec},
+	{"call",	CALL_OPCODE,		&opl_jmp,		call_exec},
+	{"ret",		RET_OPCODE,		&opl_noarg,		ret_exec},
 	{"pushr",	PUSHR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
 	{"popr",	POPR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
 	{"input",	INPUT_OPCODE,		&opl_single_reg,	simple_io_exec},
