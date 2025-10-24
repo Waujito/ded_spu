@@ -116,20 +116,6 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static const struct op_cmd *find_op_cmd(const char *cmd_name) {
-	const struct op_cmd *op_cmd_ptr = op_table;
-
-	while (op_cmd_ptr->cmd_name != NULL) {
-		if (!strcmp(cmd_name, op_cmd_ptr->cmd_name)) {
-			return op_cmd_ptr;
-		}
-		op_cmd_ptr++;
-	}
-
-	return NULL;
-}
-
-
 static int lookup_asm_instruction(size_t n_args, char **argsptrs,
 				  struct asm_instruction *asm_instr) {
 	assert (argsptrs);

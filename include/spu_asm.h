@@ -236,6 +236,8 @@ struct spu_instruction {
 
 #define MAX_DIRECTIVE_OPCODE (0x3FF)
 
+#define MAX_OPCODE (MAX_DIRECTIVE_OPCODE)
+
 /**
  * @brief Directive operations
  *
@@ -418,49 +420,43 @@ OP_EXEC_FN(noarg_exec);
 OP_EXEC_FN(scrhw_exec);
 OP_EXEC_FN(draw_exec);
 
+#define OP_CMD_ENTRY(cmd_str, cmd_code, cmd_layout, cmd_exec_func)		\
+	{.cmd_name = cmd_str, .opcode = cmd_code,				\
+	 .layout = cmd_layout, .exec_fun = cmd_exec_func}
+
 static const struct op_cmd op_table[] = {
-	{"mov",		MOV_OPCODE,		&opl_mov,		arithm_unary_exec},
-	{"ldc",		LDC_OPCODE,		&opl_ldc,		ldc_exec},
-	{"jmp",		JMP_OPCODE,		&opl_jmp, 		jmp_exec},
-	{"call",	CALL_OPCODE,		&opl_jmp,		call_exec},
-	{"ret",		RET_OPCODE,		&opl_noarg,		ret_exec},
-	{"pushr",	PUSHR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
-	{"popr",	POPR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
-	{"input",	INPUT_OPCODE,		&opl_single_reg,	simple_io_exec},
-	{"print",	PRINT_OPCODE,		&opl_single_reg,	simple_io_exec},
-	{"cmp",		CMP_OPCODE,		&opl_double_reg,	cmp_exec},	
-	{"add",		ADD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"mul",		MUL_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"sub",		SUB_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"div",		DIV_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"mod",		MOD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"shr",		SHR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"shl",		SHL_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"or",		OR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"xor",		XOR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"and",		AND_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
-	{"ldm",		LDM_OPCODE,		&opl_double_reg,	ram_exec},
-	{"stm",		STM_OPCODE,		&opl_double_reg,	ram_exec},
-	{"sqrt",	SQRT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
-	{"not",		NOT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
-	{"scrhw",	SCRHW_OPCODE,		&opl_double_reg,	scrhw_exec},
-	{"draw",	DRAW_OPCODE,		&opl_single_reg,	draw_exec},
-	{"dump",	DUMP_OPCODE,		&opl_noarg,		noarg_exec},
-	{"halt",	HALT_OPCODE,		&opl_noarg, 		noarg_exec},
+	OP_CMD_ENTRY("mov",	MOV_OPCODE,	&opl_mov,		arithm_unary_exec),
+	OP_CMD_ENTRY("ldc",	LDC_OPCODE,	&opl_ldc,		ldc_exec),
+	OP_CMD_ENTRY("jmp",	JMP_OPCODE,	&opl_jmp, 		jmp_exec),
+	OP_CMD_ENTRY("call",	CALL_OPCODE,	&opl_jmp,		call_exec),
+	OP_CMD_ENTRY("ret",	RET_OPCODE,	&opl_noarg,		ret_exec),
+	OP_CMD_ENTRY("pushr",	PUSHR_OPCODE,	&opl_single_reg,	rpush_pop_exec),
+	OP_CMD_ENTRY("popr",	POPR_OPCODE,	&opl_single_reg,	rpush_pop_exec),
+	OP_CMD_ENTRY("input",	INPUT_OPCODE,	&opl_single_reg,	simple_io_exec),
+	OP_CMD_ENTRY("print",	PRINT_OPCODE,	&opl_single_reg,	simple_io_exec),
+	OP_CMD_ENTRY("cmp",	CMP_OPCODE,	&opl_double_reg,	cmp_exec),
+	OP_CMD_ENTRY("add",	ADD_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("mul",	MUL_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("sub",	SUB_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("div",	DIV_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("mod",	MOD_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("shr",	SHR_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("shl",	SHL_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("or", 	OR_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("xor",	XOR_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("and",	AND_OPCODE,	&opl_triple_reg,	arithm_binary_exec),
+	OP_CMD_ENTRY("ldm",	LDM_OPCODE,	&opl_double_reg,	ram_exec),
+	OP_CMD_ENTRY("stm",	STM_OPCODE,	&opl_double_reg,	ram_exec),
+	OP_CMD_ENTRY("sqrt",	SQRT_OPCODE,	&opl_double_reg,	arithm_unary_exec),
+	OP_CMD_ENTRY("not",	NOT_OPCODE,	&opl_double_reg,	arithm_unary_exec),
+	OP_CMD_ENTRY("scrhw",	SCRHW_OPCODE,	&opl_double_reg,	scrhw_exec),
+	OP_CMD_ENTRY("draw",	DRAW_OPCODE,	&opl_single_reg,	draw_exec),
+	OP_CMD_ENTRY("dump",	DUMP_OPCODE,	&opl_noarg,		noarg_exec),
+	OP_CMD_ENTRY("halt",	HALT_OPCODE,	&opl_noarg, 		noarg_exec),
 	{0}
 };
 
-static inline const struct op_cmd *find_op_cmd_opcode(unsigned int opcode, int is_directive) {
-	const struct op_cmd *op_cmd_ptr = op_table;
+const struct op_cmd *find_op_cmd_opcode(unsigned int opcode, int is_directive);
+const struct op_cmd *find_op_cmd(const char *cmd_name);
 
-	while (op_cmd_ptr->cmd_name != NULL) {
-		if (op_cmd_ptr->opcode == opcode &&
-			op_cmd_ptr->layout->is_directive == is_directive) {
-			return op_cmd_ptr;
-		}
-		op_cmd_ptr++;
-	}
-
-	return NULL;
-}
 #endif /* SPU_ASM_H */
