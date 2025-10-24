@@ -107,6 +107,58 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
+int process_label(struct asm_instruction *asm_instr) {
+	assert (asm_instr);
+
+	int ret = S_OK;
+	char *label_name = asm_instr->argsptrs[0];
+	size_t label_len = strlen(label_name);
+	struct label_instance label = {{0}};
+	struct label_instance *found_label = NULL;
+
+	if (asm_instr->ctx->second_compilation) {
+		return S_OK;
+	}
+
+	size_t instr_ptr = asm_instr->ctx->n_instruction;
+
+	if (	asm_instr->n_args != 1 || 
+		*label_name != '.' || 
+		// label_min_len + ':'
+		label_len < LABEL_MIN_LEN + 1) {
+		log_error("Invalid label: %s", label_name);
+		_CT_FAIL();
+	}
+
+	if (label_name[label_len - 1] == ':') {
+		label_name[label_len - 1] = '\0';
+		label_len--;
+	}
+
+	if (label_len > LABEL_MAX_LEN) {
+		log_error("Label %s is too long: maximum size is %d",
+			label_name, LABEL_MAX_LEN);
+		_CT_FAIL();
+	}
+
+	if ((found_label = find_label(asm_instr->ctx, label_name))) {
+		if (found_label->instruction_ptr != -1) {
+			log_error("Label %s is already used", label_name);
+			_CT_FAIL();
+		} else {
+			found_label->instruction_ptr = (ssize_t)instr_ptr;
+		}
+	}
+
+	memcpy(label.label, label_name, label_len);
+	label.instruction_ptr = (ssize_t)instr_ptr;
+
+	_CT_FAIL_NONZERO(pvector_push_back(&asm_instr->ctx->labels_table, &label));
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
 static const struct jmp_cond_mapping {
 	const char *jmp_cond_name;
 	enum jmp_conditions condition;
