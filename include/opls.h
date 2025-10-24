@@ -128,10 +128,12 @@ DECLARE_BINASM_PARSERS(isingle_reg);
 DECLARE_BINASM_PARSERS(inoarg);
 DECLARE_BINASM_PARSERS(ildc);
 DECLARE_BINASM_PARSERS(imov);
+DECLARE_BINASM_PARSERS(ijmp);
 
 
 struct op_layout {
 	uint32_t layout;
+	int is_directive;
 
 	parse_binary_fn parse_bin_fn;
 	write_binary_fn write_bin_fn;
@@ -140,16 +142,17 @@ struct op_layout {
 };
 
 static const struct op_layout op_layout_table[] = {
-#define OP_LAYOUT_ENTRY(opl, fn_prefix)					\
-	{opl, fn_prefix##_parse_binary, fn_prefix##_write_binary,	\
-		fn_prefix##_parse_asm, fn_prefix##_write_asm}		\
+#define OP_LAYOUT_ENTRY(opl, is_directive, fn_prefix)				\
+	{opl, is_directive, fn_prefix##_parse_binary, fn_prefix##_write_binary,	\
+		fn_prefix##_parse_asm, fn_prefix##_write_asm}			\
 
-	OP_LAYOUT_ENTRY(OPL_NOARG,	inoarg),
-	OP_LAYOUT_ENTRY(OPL_SINGLE_REG, isingle_reg),
-	OP_LAYOUT_ENTRY(OPL_DOUBLE_REG, idouble_reg),
-	OP_LAYOUT_ENTRY(OPL_TRIPLE_REG, itriple_reg),
-	OP_LAYOUT_ENTRY(OPL_LDC, ildc),
-	OP_LAYOUT_ENTRY(OPL_MOV, imov),
+	OP_LAYOUT_ENTRY(OPL_NOARG,	1, inoarg),
+	OP_LAYOUT_ENTRY(OPL_SINGLE_REG, 1, isingle_reg),
+	OP_LAYOUT_ENTRY(OPL_DOUBLE_REG, 1, idouble_reg),
+	OP_LAYOUT_ENTRY(OPL_TRIPLE_REG, 1, itriple_reg),
+	OP_LAYOUT_ENTRY(OPL_LDC,	0, ildc),
+	OP_LAYOUT_ENTRY(OPL_MOV, 	0, imov),
+	OP_LAYOUT_ENTRY(OPL_JMP, 	0, ijmp),
 
 	{0}
 

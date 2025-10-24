@@ -323,13 +323,18 @@ struct spu_instr_data {
 	uint32_t opcode;
 	enum instruction_layout layout;
 
-	spu_register_num_t rdest;
+	union {
+		spu_register_num_t rdest;
+		spu_register_num_t jmp_condition;
+	};
+
 	spu_register_num_t rsrc1;
 	spu_register_num_t rsrc2;
 
 	union {
 		uint32_t unum;
 		int32_t snum;
+		int32_t jmp_position;
 	};
 };
 
@@ -345,7 +350,6 @@ struct op_cmd {
 
 struct translating_context;
 
-
 struct asm_instruction {
 	size_t n_args;
 	char **argsptrs;
@@ -354,6 +358,7 @@ struct asm_instruction {
 
 	int is_label;
 	int is_empty;
+	size_t nline;
 
 	struct translating_context *ctx;
 };
@@ -375,13 +380,7 @@ OP_EXEC_FN(noarg_exec);
 static const struct op_cmd op_table[] = {
 	{"mov",		MOV_OPCODE,		OPL_MOV,	arithm_unary_exec},
 	{"ldc",		LDC_OPCODE,		OPL_LDC,	ldc_exec},
-	// {"jmp",		JMP_OPCODE,		OPL_JMP, 	jmp_exec},
-	// {"jmp.eq",	JMP_OPCODE,		OPL_JMP, 	jmp_exec},
-	// {"jmp.neq",	NOT_EQUALS_JMP,		OPL_JMP, 	jmp_exec},
-	// {"jmp.geq",	GREATER_EQUALS_JMP,	OPL_JMP, 	jmp_exec},
-	// {"jmp.gt",	GREATER_JMP,		OPL_JMP, 	jmp_exec},
-	// {"jmp.leq",	LESS_EQUALS_JMP,	OPL_JMP, 	jmp_exec},
-	// {"jmp.lt",	LESS_JMP,		OPL_JMP, 	jmp_exec},
+	{"jmp",		JMP_OPCODE,		OPL_JMP, 	jmp_exec},
 	// {"call",	CALL_OPCODE,		OPL_CALL,	call_exec},
 	// {"ret",		RET_OPCODE,		OPL_NOARG,	noarg_exec},
 	{"pushr",	PUSHR_OPCODE,		OPL_SINGLE_REG,	rpush_pop_exec},

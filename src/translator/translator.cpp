@@ -11,6 +11,7 @@
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
 #include "translator_parsers.h"
+#include "translator.h"
 #include "pvector.h"
 #include "ctio.h"
 #include "opls.h"
@@ -116,28 +117,6 @@ _CT_EXIT_POINT:
 }
 
 
-struct label_instance {
-	char label[LABEL_MAX_LEN];
-	ssize_t instruction_ptr;
-};
-
-struct translating_context {
-	// Input file with asm text
-	struct pvector instr_lines_arr;
-
-	// An array with binary instructions
-	struct pvector instructions_arr;	
-
-	size_t n_instruction;
-
-	FILE *out_stream;
-
-	// Table of labels
-	struct pvector labels_table;
-
-	int second_compilation;
-};
-
 /*
 
 static int raw_cmd(struct asm_instruction *asm_instr,
@@ -235,101 +214,6 @@ static struct label_instance *find_label(struct translating_context *ctx,
 	}
 
 	return NULL;
-}
-
-static int parse_jmp_position(	struct asm_instruction *asm_instr,
-				struct spu_instruction *bin_instr,
-				const char *jmp_str, uint32_t *jmp_arg) {
-	assert (asm_instr);
-	assert (bin_instr);
-	assert (jmp_str);
-	assert (jmp_arg);
-
-	int ret = S_OK;
-
-	uint32_t arg_num = 0;
-	int32_t relative_jmp = 0;
-
-	if (*jmp_str == '.') {
-		struct label_instance *label_inst = find_label(asm_instr->ctx, jmp_str);
-		if (!label_inst) {
-			size_t label_len = strlen(jmp_str);
-			struct label_instance label = {{0}};
-
-			if (label_len > LABEL_MAX_LEN) {
-				log_error("Invalid label: %s", jmp_str);
-				_CT_FAIL();
-			}
-
-			memcpy(label.label, jmp_str, label_len);
-			label.instruction_ptr = -1;
-
-			return S_OK;
-		}
-
-		if (asm_instr->ctx->second_compilation && label_inst->instruction_ptr == -1) {
-			log_error("Undefined label: %s", jmp_str);
-			_CT_FAIL();
-		}
-
-		int32_t absolute_ptr = (int32_t)label_inst->instruction_ptr;
-		int32_t current_ptr = (int32_t)asm_instr->ctx->n_instruction;
-		int32_t relative_ptr = absolute_ptr - current_ptr - 1;
-
-		relative_jmp = relative_ptr;
-	} else if (*jmp_str == '$') {
-		int32_t number = 0;
-
-		_CT_CHECKED(parse_literal_number(jmp_str, &number));
-
-		relative_jmp = number;
-	} else {
-		_CT_FAIL();
-	}
-
-	if (test_integer_bounds(relative_jmp, JMP_INTEGER_BLEN)) {
-		log_error("jump number <%d> is too long", relative_jmp);
-		_CT_FAIL();
-	}
-	arg_num = (uint32_t)relative_jmp;
-	
-	*jmp_arg = arg_num;
-
-_CT_EXIT_POINT:
-	return ret;
-}
-
-static int jmp_cmd(struct asm_instruction *asm_instr,
-		   struct spu_instruction *bin_instr) {
-	assert (asm_instr);
-	assert (bin_instr);
-	
-	if (asm_instr->n_args != 1 + 1) {
-		return S_FAIL;
-	}
-
-	char *jmp_str = asm_instr->argsptrs[1];
-
-	int ret = S_OK;
-
-	unsigned int jump_condition = asm_instr->op_cmd->opcode;
-
-	uint32_t arg_num = 0;
-
-	_CT_CHECKED(parse_jmp_position(asm_instr, bin_instr, jmp_str, &arg_num));
-
-	bin_instr->opcode.code	= JMP_OPCODE;
-	bin_instr->opcode.reserved1 = 0;
-
-	// !!! Setts flags instead of registers !!!
-	_CT_CHECKED(instr_set_register(
-		(spu_register_num_t)jump_condition,
-		bin_instr, 0, USE_R_HEAD_BIT));
-	_CT_CHECKED(instr_set_bitfield(arg_num, JMP_INTEGER_BLEN,
-				bin_instr, FREGISTER_BIT_LEN));
-
-_CT_EXIT_POINT:
-	return ret;
 }
 
 static int call_cmd(struct asm_instruction *asm_instr,
@@ -502,7 +386,7 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static int assembly(struct translating_context *ctx) {
+static int prepare_asm_instructions(struct translating_context *ctx) {
 	assert (ctx);
 
 	int ret = S_OK;
@@ -524,14 +408,39 @@ static int assembly(struct translating_context *ctx) {
 
 		if (asm_instr.is_empty) {
 			continue;
-		} else if (asm_instr.is_label) {
+		}
+
+		asm_instr.nline = nline;
+
+		_CT_FAIL_NONZERO(pvector_push_back(&ctx->asm_instr_arr, &asm_instr));
+	}
+
+_CT_EXIT_POINT:
+	return ret;
+}
+
+static int assembly(struct translating_context *ctx) {
+	assert (ctx);
+
+	int ret = S_OK;
+
+	for (size_t i = 0; i < ctx->asm_instr_arr.len; i++) {
+		struct asm_instruction *asm_instr = NULL;
+		_CT_FAIL_NONZERO(pvector_get(&ctx->asm_instr_arr,
+			  i, (void **)&asm_instr));
+
+		if (asm_instr->is_empty) {
+			continue;
+		} else if (asm_instr->is_label) {
 			// _CT_CHECKED(process_label(&asm_instr));
 		} else {
-			if (assemble_instruction(&asm_instr)) {
-				log_error("Invalid line #%zu", nline + 1);
+			if (assemble_instruction(asm_instr)) {
+				log_error("Invalid line #%zu", asm_instr->nline + 1);
 				_CT_FAIL();
 			}
 		}
+
+
 	}
 
 _CT_EXIT_POINT:
@@ -570,6 +479,10 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 			  sizeof(struct label_instance)));
 	_CT_FAIL_NONZERO(pvector_init(&ctx.instructions_arr,
 			  sizeof(spu_instruction_t)));
+	_CT_FAIL_NONZERO(pvector_init(&ctx.asm_instr_arr,
+			       sizeof(struct asm_instruction)));
+	     
+	_CT_CHECKED(prepare_asm_instructions(&ctx));
 
 	_CT_CHECKED(assembly(&ctx));
 
@@ -588,6 +501,7 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 _CT_EXIT_POINT:
 	pvector_destroy(&ctx.instructions_arr);
 	pvector_destroy(&ctx.labels_table);
+	pvector_destroy(&ctx.asm_instr_arr);
 	pvector_destroy(&ctx.instr_lines_arr);
 	free(textbuf);
 

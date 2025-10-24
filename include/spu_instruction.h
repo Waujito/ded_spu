@@ -57,51 +57,6 @@
 // #define INSTR_LOG(...) (void)0
 // #endif
 //
-// static inline int do_conditional_jump(
-// 	struct spu_context *ctx, int condition) {
-// 	assert (ctx);
-//
-// 	switch (condition) {
-// 		case UNCONDITIONAL_JMP:
-// 			break;
-// 		case EQUALS_JMP:
-// 			if (!(ctx->RFLAGS & CMP_EQ_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		case NOT_EQUALS_JMP:
-// 			if ((ctx->RFLAGS & CMP_EQ_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		case GREATER_EQUALS_JMP:
-// 			if ((ctx->RFLAGS & CMP_SIGN_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		case GREATER_JMP:
-// 			if ((ctx->RFLAGS & CMP_SIGN_FLAG) ||
-// 			    (ctx->RFLAGS & CMP_EQ_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		case LESS_EQUALS_JMP:
-// 			if (!(ctx->RFLAGS & CMP_SIGN_FLAG) &&
-// 			    !(ctx->RFLAGS & CMP_EQ_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		case LESS_JMP:
-// 			if (!(ctx->RFLAGS & CMP_SIGN_FLAG)) {
-// 				return 0;
-// 			}
-// 			break;
-// 		default:
-// 			return -1;
-// 	}
-//
-// 	return 1;
-// }
 //
 // #ifdef SPU_INSTR_MODE_DISASM
 // static int DisasmDirectiveInstruction(struct spu_context *ctx,
