@@ -37,4 +37,4 @@ DEFINE_ASM_WRITER(double_reg, {
 			instr_data->rdest, instr_data->rsrc1);
 });
 
-DEFINE_BINASM_PARSERS(double_reg, 1);
+DEFINE_OP_LAYOUT(double_reg, 1);

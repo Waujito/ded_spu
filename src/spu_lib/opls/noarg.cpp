@@ -21,4 +21,4 @@ DEFINE_ASM_WRITER(noarg, {
 });
 
 
-DEFINE_BINASM_PARSERS(noarg, 1);
+DEFINE_OP_LAYOUT(noarg, 1);

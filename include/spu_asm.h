@@ -365,16 +365,16 @@ struct op_layout {
 	write_asm_fn write_asm_fn;
 };
 
-#define DECLARE_BINASM_PARSERS(name)				\
+#define DECLARE_OP_LAYOUT(name)				\
 extern const struct op_layout opl_##name;
 
-DECLARE_BINASM_PARSERS(triple_reg);
-DECLARE_BINASM_PARSERS(double_reg);
-DECLARE_BINASM_PARSERS(single_reg);
-DECLARE_BINASM_PARSERS(noarg);
-DECLARE_BINASM_PARSERS(ldc);
-DECLARE_BINASM_PARSERS(mov);
-DECLARE_BINASM_PARSERS(jmp);
+DECLARE_OP_LAYOUT(triple_reg);
+DECLARE_OP_LAYOUT(double_reg);
+DECLARE_OP_LAYOUT(single_reg);
+DECLARE_OP_LAYOUT(noarg);
+DECLARE_OP_LAYOUT(ldc);
+DECLARE_OP_LAYOUT(mov);
+DECLARE_OP_LAYOUT(jmp);
 
 struct op_cmd {
 	const char *cmd_name;

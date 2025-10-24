@@ -53,4 +53,4 @@ DEFINE_ASM_WRITER(ldc, {
 			instr_data->rdest, instr_data->snum);
 });
 
-DEFINE_BINASM_PARSERS(ldc, 0);
+DEFINE_OP_LAYOUT(ldc, 0);

@@ -97,7 +97,7 @@ _CT_EXIT_POINT:									\
 	return ret;								\
 }										\
 
-#define DEFINE_BINASM_PARSERS(name, is_directive)				\
+#define DEFINE_OP_LAYOUT(name, is_directive)					\
 const struct op_layout opl_##name = {						\
 	is_directive,								\
 	opl_##name##_parse_binary,						\

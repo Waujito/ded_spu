@@ -32,4 +32,4 @@ DEFINE_ASM_WRITER(single_reg, {
 			instr_data->rdest);
 });
 
-DEFINE_BINASM_PARSERS(single_reg, 1);
+DEFINE_OP_LAYOUT(single_reg, 1);

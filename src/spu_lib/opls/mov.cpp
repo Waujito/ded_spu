@@ -37,4 +37,4 @@ DEFINE_ASM_WRITER(mov, {
 			instr_data->rdest, instr_data->rsrc1);
 });
 
-DEFINE_BINASM_PARSERS(mov, 0);
+DEFINE_OP_LAYOUT(mov, 0);

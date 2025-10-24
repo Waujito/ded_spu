@@ -45,4 +45,4 @@ DEFINE_ASM_WRITER(triple_reg, {
 });
 
 
-DEFINE_BINASM_PARSERS(triple_reg, 1);
+DEFINE_OP_LAYOUT(triple_reg, 1);
