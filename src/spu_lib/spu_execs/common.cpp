@@ -120,13 +120,18 @@ OP_EXEC_FN(arithm_binary_exec) {
 		OPERATION_CASE(OR_OPCODE,  |);
 		OPERATION_CASE(XOR_OPCODE, ^);
 		OPERATION_CASE(AND_OPCODE, &);
-		OPERATION_CASE(SHL_OPCODE, <<);
 
 		// If we do this without casts, C will do an arithmetic shift
+		case SHL_OPCODE:
+			ctx->registers[instr.rdest] = 
+			(int64_t) ((uint64_t) ctx->registers[instr.rsrc1] << 
+					(uint64_t) ctx->registers[instr.rsrc2]);
+			break;
 		case SHR_OPCODE:
 			ctx->registers[instr.rdest] = 
 			(int64_t) ((uint64_t) ctx->registers[instr.rsrc1] >>
 					(uint64_t) ctx->registers[instr.rsrc2]);
+			break;
 		case DIV_OPCODE:
 			if (ctx->registers[instr.rsrc2] == 0) {
 				return S_FAIL;

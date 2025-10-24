@@ -314,6 +314,7 @@ enum spu_directive_opcodes {
 
 	// Returns screen height and width
 	SCRHW_OPCODE	= 0x65,
+	DRAW_OPCODE	= 0x66,
 
 	/// Compares two registers
 	CMP_OPCODE	= 0x70,
@@ -415,6 +416,7 @@ OP_EXEC_FN(arithm_unary_exec);
 OP_EXEC_FN(ram_exec);
 OP_EXEC_FN(noarg_exec);
 OP_EXEC_FN(scrhw_exec);
+OP_EXEC_FN(draw_exec);
 
 static const struct op_cmd op_table[] = {
 	{"mov",		MOV_OPCODE,		&opl_mov,		arithm_unary_exec},
@@ -442,6 +444,7 @@ static const struct op_cmd op_table[] = {
 	{"sqrt",	SQRT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
 	{"not",		NOT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
 	{"scrhw",	SCRHW_OPCODE,		&opl_double_reg,	scrhw_exec},
+	{"draw",	DRAW_OPCODE,		&opl_single_reg,	draw_exec},
 	{"dump",	DUMP_OPCODE,		&opl_noarg,		noarg_exec},
 	{"halt",	HALT_OPCODE,		&opl_noarg, 		noarg_exec},
 	{0}

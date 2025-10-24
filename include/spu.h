@@ -13,6 +13,9 @@
 #define RET_STACK_MAX_SIZE (1024)
 #define RAM_SIZE (1048576)
 
+#define SCREEN_HEIGHT (15)
+#define SCREEN_WIDTH (15)
+
 #define S_HALT (1)
 
 struct spu_context {

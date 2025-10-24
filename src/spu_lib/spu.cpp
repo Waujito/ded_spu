@@ -25,8 +25,8 @@ int SPUCtor(struct spu_context *ctx) {
 		.instr_bufsize = 0,
 		.ip = 0,
 		.stack = {0},
-		.screen_height = 10,
-		.screen_width = 10
+		.screen_height = SCREEN_HEIGHT,
+		.screen_width = SCREEN_WIDTH
 	};
 
 	if (pvector_init(&ctx->stack, sizeof(spu_data_t))) {
