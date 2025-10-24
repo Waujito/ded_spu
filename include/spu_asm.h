@@ -8,10 +8,11 @@
  * 6-bit opcode allows up to 2^6 = 64 different instructions.
  *
  * 64 instructions are not enough, so here will be an extending opcode.
- * So, let's call instructions encoded with this basic opcode, 
- * wide instructions and with extended opcode directive instructions.
+ * So, let's call instructions encoded like this "basic opcode", // FIXME rewrite
+ * wide instructions with extended opcode - "directive instructions".
  *
  * ```
+ * 32                                                                    0
  * |-----------------------------------------------|---------------------|
  * |                       1 byte                  |        3 bytes      |
  * |--------------|-----------------|--------------|---------------------|
@@ -19,9 +20,9 @@
  * |--------------|-----------------|--------------|---------------------|
  * ```
  *
- * Register pointers are called Rd_n, n >= 0
+ * Register numbers are called Rd_n, n >= 0
  *
- * All registers are 5-bit fields, which means here are up to 2^5 = 32
+ * All registers are 5-bit fields, which means here is up to 2^5 = 32
  * general-puprose registers.
  *
  * Here is only one named register, RSP.
@@ -31,18 +32,15 @@
  *
  * In the documentation below, the destination register called Rd.
  *
- * Altough, registers are 5 bit wide. Here is one bit in the 
- * first byte of the instruction which encodes the (typically) first register.
+ * Although, registers are 5 bit wide. Here is one bit in the 
+ * first byte of the instruction which encodes the first register.
  * So the register is encoded with this flag + 4-bit field
  * in the instruction argument set.
  *
  * All registers are independent from each other.
  * Operations MUST NOT **implicitly** changle the registers (except RSP).
  *
- * The user should pass the instruction all the registers
- * they want to operate on.
- *
- * So, the first register has layout:
+ * So, the first register number has layout:
  * ```
  * |------------------------------|--------------------------------------|
  * | 1 bit in instruction header  |             4-bit field              |
@@ -363,6 +361,7 @@ struct asm_instruction {
 	int is_empty;
 	size_t nline;
 
+// TODO: delete context
 	struct translating_context *ctx;
 };
 
@@ -385,7 +384,7 @@ struct op_layout {
 };
 
 #define DECLARE_OP_LAYOUT(name)				\
-extern const struct op_layout opl_##name;
+	extern const struct op_layout opl_##name;
 
 DECLARE_OP_LAYOUT(triple_reg);
 DECLARE_OP_LAYOUT(double_reg);

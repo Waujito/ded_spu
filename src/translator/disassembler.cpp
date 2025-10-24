@@ -20,6 +20,7 @@ static int disasm_instruction(struct spu_instruction *instr) {
 	const struct op_cmd *op_cmd = NULL;
 
 	int is_directive = 0;
+	struct spu_instr_data instr_data = {0};
 
 	if (opcode == DIRECTIVE_OPCODE) {
 		is_directive = 1;
@@ -33,12 +34,9 @@ static int disasm_instruction(struct spu_instruction *instr) {
 		_CT_FAIL();
 	}
 
-	{
-		struct spu_instr_data instr_data = {0};
-		_CT_CHECKED(op_cmd->layout->parse_bin_fn(instr, &instr_data));
-		_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
-		fprintf(stdout, "\n");
-	}
+	_CT_CHECKED(op_cmd->layout->parse_bin_fn(instr, &instr_data));
+	_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
+	fprintf(stdout, "\n");
 
 _CT_EXIT_POINT:
 	return ret;
@@ -47,21 +45,14 @@ _CT_EXIT_POINT:
 static int DisasmLoop(struct spu_context *ctx) {
 	assert (ctx);
 
-	int ret = S_OK;
-
 	while (ctx->ip < ctx->instr_bufsize) {
 		struct spu_instruction instr = {
 			.instruction = ctx->instr_buf[ctx->ip]
 		};
 		ctx->ip++;
 
-		ret = disasm_instruction(&instr);
-		if (ret) {
-			if (ret < 0) {
-				return S_FAIL;
-			} else {
-				return S_OK;
-			}
+		if (disasm_instruction(&instr)) {
+			return S_FAIL;
 		}
 	}
 
@@ -73,7 +64,7 @@ static int disasm(const char *in_filename) {
 
 	int ret = S_OK;
 
-	_CT_CHECKED(SPULoadBinary(&ctx, in_filename));
+	_CT_CHECKED(SPULoadBinary(&ctx, in_filename)); // FIXME snake pascal
 
 	_CT_CHECKED(DisasmLoop(&ctx));
 

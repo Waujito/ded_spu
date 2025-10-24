@@ -108,10 +108,11 @@ OP_EXEC_FN(arithm_unary_exec) {
 
 OP_EXEC_FN(arithm_binary_exec) {
 	switch (instr.opcode) {
+
 #define OPERATION_CASE(opcode, operation)	\
 	case opcode:				\
-	ctx->registers[instr.rdest] =		\
-		ctx->registers[instr.rsrc1] operation ctx->registers[instr.rsrc2]; \
+		ctx->registers[instr.rdest] =		\
+			ctx->registers[instr.rsrc1] operation ctx->registers[instr.rsrc2]; \
 		break
 
 		OPERATION_CASE(ADD_OPCODE, +);

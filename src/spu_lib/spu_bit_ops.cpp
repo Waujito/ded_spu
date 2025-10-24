@@ -89,7 +89,7 @@ int instr_set_register(spu_register_num_t rn,
 	if (use_head_bit) {
 		instr->opcode.reg_extended = (
 			(rn & REGISTER_HIGHBIT_MASK) == REGISTER_HIGHBIT_MASK);
-		rn &= (uint8_t)(~REGISTER_HIGHBIT_MASK);
+		rn &= (uint8_t)(~REGISTER_HIGHBIT_MASK); // FIXME rename
 	}
 
 	if (instr_set_bitfield(rn, reg_copy_len, instr, pos)) {

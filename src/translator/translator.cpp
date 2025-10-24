@@ -17,7 +17,7 @@
 #include "jmp_opl.h"
 
 #ifdef _DEBUG
-#define T_DEBUG
+#define T_DEBUG // FIXME:
 #endif
 
 static inline int is_comment_string(char *arg) {
@@ -89,6 +89,7 @@ static int tokenize_instructions(struct pvector *instr_lines_arr,
 		struct text_line *line = NULL;
 		_CT_FAIL_NONZERO(pvector_get(
 			&lines_arr, i, (void **)&line));
+
 		struct instruction_line instr_line = {
 			.lineptr = line->line_ptr,
 			.linesz = line->line_sz,
@@ -122,7 +123,7 @@ static int lookup_asm_instruction(size_t n_args, char **argsptrs,
 	assert (asm_instr);
 
 	asm_instr->n_args	= n_args;
-	asm_instr->argsptrs = argsptrs;
+	asm_instr->argsptrs	= argsptrs;
 
 	if (asm_instr->n_args == 0) {
 		asm_instr->is_empty = 1;
@@ -233,7 +234,7 @@ static int assembly(struct translating_context *ctx) {
 			  i, (void **)&asm_instr));
 
 		if (asm_instr->is_empty) {
-			continue;
+			continue; // REVIEW:
 		} else if (asm_instr->is_label) {
 			_CT_CHECKED(process_label(asm_instr));
 		} else {
@@ -275,6 +276,7 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 	
 	_CT_FAIL_NONZERO(pvector_init(&ctx.labels_table,
 			  sizeof(struct label_instance)));
+	//TODO bin-INSTR
 	_CT_FAIL_NONZERO(pvector_init(&ctx.instructions_arr,
 			  sizeof(spu_instruction_t)));
 	_CT_FAIL_NONZERO(pvector_init(&ctx.asm_instr_arr,
