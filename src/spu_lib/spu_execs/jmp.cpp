@@ -1,9 +1,6 @@
 #include <assert.h>
 #include "spu_asm.h"
-#include "spu_bit_ops.h"
-#include "translator_parsers.h"
 #include "spu.h"
-#include "math.h"
 
 static inline int do_conditional_jump(
 	struct spu_context *ctx, int condition) {

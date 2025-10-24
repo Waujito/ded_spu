@@ -24,7 +24,9 @@ int SPUCtor(struct spu_context *ctx) {
 		.instr_buf = NULL,
 		.instr_bufsize = 0,
 		.ip = 0,
-		.stack = {0}
+		.stack = {0},
+		.screen_height = 10,
+		.screen_width = 10
 	};
 
 	if (pvector_init(&ctx->stack, sizeof(spu_data_t))) {
@@ -32,6 +34,11 @@ int SPUCtor(struct spu_context *ctx) {
 	}
 
 	if (pvector_init(&ctx->call_stack, sizeof(uint64_t))) {
+		return S_FAIL;
+	}
+
+	ctx->ram = malloc(RAM_SIZE);
+	if (!ctx->ram) {
 		return S_FAIL;
 	}
 
@@ -47,6 +54,7 @@ int SPUDtor(struct spu_context *ctx) {
 
 	pvector_destroy(&ctx->stack);
 	pvector_destroy(&ctx->call_stack);
+	free(ctx->ram);
 
 	return S_OK;
 }

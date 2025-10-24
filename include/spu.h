@@ -11,6 +11,7 @@
 #include "pvector.h"
 
 #define RET_STACK_MAX_SIZE (1024)
+#define RAM_SIZE (1048576)
 
 #define S_HALT (1)
 
@@ -22,6 +23,9 @@ struct spu_context {
 	size_t ip;
 	struct pvector stack;
 	struct pvector call_stack;
+	int64_t *ram;
+	uint64_t screen_height;
+	uint64_t screen_width;
 };
 
 

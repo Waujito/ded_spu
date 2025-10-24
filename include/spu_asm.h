@@ -282,10 +282,22 @@ enum spu_directive_opcodes {
 	DIV_OPCODE	= 0x04,
 	/// Triple-register operation
 	MOD_OPCODE	= 0x05,
+	/// Triple-register operation
+	SHR_OPCODE	= 0x06,
+	/// Triple-register operation
+	SHL_OPCODE	= 0x07,
 
 	/// Integer square root
 	/// Unary operation
 	SQRT_OPCODE	= 0x08,
+
+	OR_OPCODE	= 0x10,
+	XOR_OPCODE	= 0x11,
+	AND_OPCODE	= 0x12,
+	NOT_OPCODE	= 0x13,
+
+	LDM_OPCODE	= 0x16,
+	STM_OPCODE	= 0x17,
 
 	/// Single-register operation
 	PUSHR_OPCODE	= 0x20,
@@ -297,7 +309,11 @@ enum spu_directive_opcodes {
 	/// Single-register operation
 	PRINT_OPCODE	= 0x51,
 
+
 	RET_OPCODE	= 0x60,
+
+	// Returns screen height and width
+	SCRHW_OPCODE	= 0x65,
 
 	/// Compares two registers
 	CMP_OPCODE	= 0x70,
@@ -396,7 +412,9 @@ OP_EXEC_FN(simple_io_exec);
 OP_EXEC_FN(cmp_exec);
 OP_EXEC_FN(arithm_binary_exec);
 OP_EXEC_FN(arithm_unary_exec);
+OP_EXEC_FN(ram_exec);
 OP_EXEC_FN(noarg_exec);
+OP_EXEC_FN(scrhw_exec);
 
 static const struct op_cmd op_table[] = {
 	{"mov",		MOV_OPCODE,		&opl_mov,		arithm_unary_exec},
@@ -408,13 +426,22 @@ static const struct op_cmd op_table[] = {
 	{"popr",	POPR_OPCODE,		&opl_single_reg,	rpush_pop_exec},
 	{"input",	INPUT_OPCODE,		&opl_single_reg,	simple_io_exec},
 	{"print",	PRINT_OPCODE,		&opl_single_reg,	simple_io_exec},
-	{"cmp",		CMP_OPCODE,		&opl_double_reg,	cmp_exec},
+	{"cmp",		CMP_OPCODE,		&opl_double_reg,	cmp_exec},	
 	{"add",		ADD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
 	{"mul",		MUL_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
 	{"sub",		SUB_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
 	{"div",		DIV_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
 	{"mod",		MOD_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"shr",		SHR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"shl",		SHL_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"or",		OR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"xor",		XOR_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"and",		AND_OPCODE,		&opl_triple_reg,	arithm_binary_exec},
+	{"ldm",		LDM_OPCODE,		&opl_double_reg,	ram_exec},
+	{"stm",		STM_OPCODE,		&opl_double_reg,	ram_exec},
 	{"sqrt",	SQRT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
+	{"not",		NOT_OPCODE,		&opl_double_reg,	arithm_unary_exec},
+	{"scrhw",	SCRHW_OPCODE,		&opl_double_reg,	scrhw_exec},
 	{"dump",	DUMP_OPCODE,		&opl_noarg,		noarg_exec},
 	{"halt",	HALT_OPCODE,		&opl_noarg, 		noarg_exec},
 	{0}

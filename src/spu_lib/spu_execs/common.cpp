@@ -1,7 +1,5 @@
 #include <assert.h>
 #include "spu_asm.h"
-#include "spu_bit_ops.h"
-#include "translator_parsers.h"
 #include "spu.h"
 #include "math.h"
 
@@ -91,8 +89,15 @@ OP_EXEC_FN(arithm_unary_exec) {
 			ctx->registers[instr.rdest] = ctx->registers[instr.rsrc1];
 			break;
 		case SQRT_OPCODE:
+			if (ctx->registers[instr.rsrc1] < 0) {
+				return S_FAIL;
+			}
+
 			ctx->registers[instr.rdest] = 
 				(int64_t) sqrt((double)ctx->registers[instr.rsrc1]);
+			break;
+		case NOT_OPCODE:
+			ctx->registers[instr.rdest] = ~(ctx->registers[instr.rsrc1]);
 			break;
 		default:
 			return S_FAIL;
@@ -112,6 +117,16 @@ OP_EXEC_FN(arithm_binary_exec) {
 		OPERATION_CASE(ADD_OPCODE, +);
 		OPERATION_CASE(MUL_OPCODE, *);
 		OPERATION_CASE(SUB_OPCODE, -);
+		OPERATION_CASE(OR_OPCODE,  |);
+		OPERATION_CASE(XOR_OPCODE, ^);
+		OPERATION_CASE(AND_OPCODE, &);
+		OPERATION_CASE(SHL_OPCODE, <<);
+
+		// If we do this without casts, C will do an arithmetic shift
+		case SHR_OPCODE:
+			ctx->registers[instr.rdest] = 
+			(int64_t) ((uint64_t) ctx->registers[instr.rsrc1] >>
+					(uint64_t) ctx->registers[instr.rsrc2]);
 		case DIV_OPCODE:
 			if (ctx->registers[instr.rsrc2] == 0) {
 				return S_FAIL;
