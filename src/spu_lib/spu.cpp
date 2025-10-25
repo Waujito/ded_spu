@@ -6,6 +6,9 @@
 
 #include <stdlib.h>
 
+#define SPU
+#include "spu_asm.h"
+
 #include "spu.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"

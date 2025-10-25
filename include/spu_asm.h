@@ -421,9 +421,16 @@ OP_EXEC_FN(noarg_exec);
 OP_EXEC_FN(scrhw_exec);
 OP_EXEC_FN(draw_exec);
 
+#ifdef SPU
 #define OP_CMD_ENTRY(cmd_str, cmd_code, cmd_layout, cmd_exec_func)		\
 	{.cmd_name = cmd_str, .opcode = cmd_code,				\
 	 .layout = cmd_layout, .exec_fun = cmd_exec_func}
+#else
+#define OP_CMD_ENTRY(cmd_str, cmd_code, cmd_layout, cmd_exec_func)		\
+	{.cmd_name = cmd_str, .opcode = cmd_code,				\
+	 .layout = cmd_layout, .exec_fun = NULL}
+#endif
+
 
 static const struct op_cmd op_table[] = {
 	OP_CMD_ENTRY("mov",	MOV_OPCODE,	&opl_mov,		arithm_unary_exec),

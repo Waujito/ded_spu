@@ -17,7 +17,7 @@
 #include "jmp_opl.h"
 
 #ifdef _DEBUG
-#define T_DEBUG // FIXME:
+#define ASM_DEBUG
 #endif
 
 static inline int is_comment_string(char *arg) {
@@ -177,11 +177,11 @@ static int assemble_instruction(struct asm_instruction *asm_instr) {
 	_CT_CHECKED(op_cmd->layout->parse_asm_fn(asm_instr, &instr_data));
 	_CT_CHECKED(op_cmd->layout->write_bin_fn(&instr_data, &bin_instr));
 
-#ifdef T_DEBUG
+#ifdef ASM_DEBUG
 	eprintf("Writing instruction: <0x");
 	buf_dump_hex(&bin_instr, sizeof (bin_instr), stderr);
 	eprintf(">\n");
-#endif /* T_DEBUG */
+#endif /* ASM_DEBUG */
 
 	_CT_FAIL_NONZERO(pvector_push_back(
 		&asm_instr->ctx->bin_instr_arr, &bin_instr));
