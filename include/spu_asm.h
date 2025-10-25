@@ -457,6 +457,7 @@ static const struct op_cmd op_table[] = {
 	{0}
 };
 
+void init_op_cmd_opcode_table(void);
 const struct op_cmd *find_op_cmd_opcode(unsigned int opcode, int is_directive);
 const struct op_cmd *find_op_cmd(const char *cmd_name);
 

@@ -9,6 +9,7 @@
 #include "spu.h"
 #include "spu_bit_ops.h"
 #include "spu_debug.h"
+#include "spu_asm.h"
 
 #ifdef _DEBUG
 #define DEBUG_INSTRUCTIONS
@@ -41,6 +42,8 @@ int SPUCtor(struct spu_context *ctx) {
 	if (!ctx->ram) {
 		return S_FAIL;
 	}
+
+	init_op_cmd_opcode_table();
 
 	return S_OK;
 }
