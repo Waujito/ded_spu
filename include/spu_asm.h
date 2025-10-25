@@ -302,9 +302,9 @@ enum spu_directive_opcodes {
 	STM_OPCODE	= 0x17,
 
 	/// Single-register operation
-	PUSHR_OPCODE	= 0x20,
+	PUSH_OPCODE	= 0x20,
 	/// Single-register operation
-	POPR_OPCODE	= 0x21,
+	POP_OPCODE	= 0x21,
 
 	/// Single-register operation
 	INPUT_OPCODE	= 0x50,
@@ -431,8 +431,8 @@ static const struct op_cmd op_table[] = {
 	OP_CMD_ENTRY("jmp",	JMP_OPCODE,	&opl_jmp, 		jmp_exec),
 	OP_CMD_ENTRY("call",	CALL_OPCODE,	&opl_jmp,		call_exec),
 	OP_CMD_ENTRY("ret",	RET_OPCODE,	&opl_noarg,		ret_exec),
-	OP_CMD_ENTRY("pushr",	PUSHR_OPCODE,	&opl_single_reg,	rpush_pop_exec),
-	OP_CMD_ENTRY("popr",	POPR_OPCODE,	&opl_single_reg,	rpush_pop_exec),
+	OP_CMD_ENTRY("push",	PUSH_OPCODE,	&opl_single_reg,	rpush_pop_exec),
+	OP_CMD_ENTRY("pop",	POP_OPCODE,	&opl_single_reg,	rpush_pop_exec),
 	OP_CMD_ENTRY("input",	INPUT_OPCODE,	&opl_single_reg,	simple_io_exec),
 	OP_CMD_ENTRY("print",	PRINT_OPCODE,	&opl_single_reg,	simple_io_exec),
 	OP_CMD_ENTRY("cmp",	CMP_OPCODE,	&opl_double_reg,	cmp_exec),

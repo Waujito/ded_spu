@@ -15,7 +15,7 @@ ret
 .fact_ret_deep:
 
 ; save n
-pushr r0
+push r0
 
 ; n -= 1
 ldc r1 $1
@@ -25,7 +25,7 @@ sub r0 r0 r1
 call .factorial
 
 ; get n
-popr r1
+pop r1
 
 ; n = n * factorial(n - 1)
 mul r0 r1 r0

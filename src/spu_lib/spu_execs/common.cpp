@@ -30,12 +30,12 @@ OP_EXEC_FN(rpush_pop_exec) {
 	int ret = S_OK;
 
 	switch (instr.opcode) {
-		case PUSHR_OPCODE:
+		case PUSH_OPCODE:
 			_CT_FAIL_NONZERO(pvector_push_back(
 				&ctx->stack, &(ctx->registers[instr.rdest])));
 
 			break;
-		case POPR_OPCODE:
+		case POP_OPCODE:
 			_CT_FAIL_NONZERO(pvector_pop_back(
 				&ctx->stack, &(ctx->registers[instr.rdest])));
 			break;
