@@ -41,7 +41,7 @@ int parse_register(const char *str, spu_register_num_t *regptr) {
 			_CT_FAIL();
 		}
 
-		if (rnum > 30) { // TODO
+		if (rnum >= N_GENERAL_REGISTERS) {
 			_CT_FAIL();
 		}
 

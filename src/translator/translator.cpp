@@ -67,63 +67,13 @@ static ssize_t tokenize_opcodeline(char *lineptr, char *argsptrs[MAX_INSTR_ARGS]
 	return n_args;
 }
 
-struct instruction_line {
-	char *lineptr;
-	size_t linesz;
-	char *argsptrs[MAX_INSTR_ARGS];
-	size_t n_args;
-};
-
-static int tokenize_instructions(struct pvector *instr_lines_arr,
-				 char *textbuf, size_t textbuf_len) {
-	int ret = S_OK;
-
-	PVECTOR_CREATE(lines_arr, sizeof(struct text_line));
-	_CT_FAIL_NONZERO(pvector_read_lines(&lines_arr,
-			  textbuf, textbuf_len));
-
-	_CT_FAIL_NONZERO(pvector_init(instr_lines_arr, sizeof(struct instruction_line)));
-	_CT_FAIL_NONZERO(pvector_set_capacity(instr_lines_arr, lines_arr.len + 1));
-
-	for (size_t i = 0; i < lines_arr.len; i++) {
-		struct text_line *line = NULL;
-		_CT_FAIL_NONZERO(pvector_get(
-			&lines_arr, i, (void **)&line));
-
-		struct instruction_line instr_line = {
-			.lineptr = line->line_ptr,
-			.linesz = line->line_sz,
-			.argsptrs = {0},
-			.n_args = 0,
-		};
-
-		ssize_t n_args = 0;
-
-		if ((n_args = tokenize_opcodeline(
-			instr_line.lineptr,
-			instr_line.argsptrs)) < 0) {
-			log_error("Invalid line #%zu", i + 1);
-			_CT_FAIL();
-		}
-		instr_line.n_args = (size_t)n_args;
-
-		_CT_FAIL_NONZERO(pvector_push_back(
-			instr_lines_arr, &instr_line));
-	}
-
-_CT_EXIT_POINT:
-	pvector_destroy(&lines_arr);
-
-	return ret;
-}
-
-static int lookup_asm_instruction(size_t n_args, char **argsptrs,
+static int lookup_asm_instruction(size_t n_args, char *argsptrs[MAX_INSTR_ARGS],
 				  struct asm_instruction *asm_instr) {
 	assert (argsptrs);
 	assert (asm_instr);
 
 	asm_instr->n_args	= n_args;
-	asm_instr->argsptrs	= argsptrs;
+	memcpy(asm_instr->argsptrs, argsptrs, sizeof(asm_instr->argsptrs));
 
 	if (asm_instr->n_args == 0) {
 		asm_instr->is_empty = 1;
@@ -161,6 +111,58 @@ static int lookup_asm_instruction(size_t n_args, char **argsptrs,
 	return S_OK;
 }
 
+static int tokenize_instructions(struct translating_context *ctx,
+				 char *textbuf, size_t textbuf_len) {
+	int ret = S_OK;
+
+	PVECTOR_CREATE(lines_arr, sizeof(struct text_line));
+	_CT_FAIL_NONZERO(pvector_read_lines(&lines_arr,
+			  textbuf, textbuf_len));
+
+	_CT_FAIL_NONZERO(pvector_init(&ctx->asm_instr_arr, sizeof(struct asm_instruction)));
+	_CT_FAIL_NONZERO(pvector_set_capacity(&ctx->asm_instr_arr, lines_arr.len + 1));
+
+	for (size_t i = 0; i < lines_arr.len; i++) {
+		struct text_line *line = NULL;
+		_CT_FAIL_NONZERO(pvector_get(
+			&lines_arr, i, (void **)&line));
+
+		char *argsptrs[MAX_INSTR_ARGS] = {0};
+		struct asm_instruction asm_instr = {0};
+
+		ssize_t n_args = 0;
+
+		if ((n_args = tokenize_opcodeline(
+			line->line_ptr,
+			argsptrs)) < 0) {
+			log_error("Invalid line #%zu", i + 1);
+			_CT_FAIL();
+		}
+
+		if (lookup_asm_instruction((size_t) n_args, 
+				argsptrs, &asm_instr)) {
+			log_error("Invalid line #%zu", i + 1);
+			_CT_FAIL();
+		}
+
+		if (asm_instr.is_empty) {
+			continue;
+		}
+
+		asm_instr.nline = i;
+
+		asm_instr.ctx = ctx;
+
+		_CT_FAIL_NONZERO(pvector_push_back(&ctx->asm_instr_arr, &asm_instr));
+	}
+
+_CT_EXIT_POINT:
+	pvector_destroy(&lines_arr);
+
+	return ret;
+}
+
+
 static int assemble_instruction(struct asm_instruction *asm_instr) {
 	assert (asm_instr);
 
@@ -182,42 +184,9 @@ static int assemble_instruction(struct asm_instruction *asm_instr) {
 #endif /* T_DEBUG */
 
 	_CT_FAIL_NONZERO(pvector_push_back(
-		&asm_instr->ctx->instructions_arr, &bin_instr));
+		&asm_instr->ctx->bin_instr_arr, &bin_instr));
 
 	asm_instr->ctx->n_instruction++;
-
-_CT_EXIT_POINT:
-	return ret;
-}
-
-static int prepare_asm_instructions(struct translating_context *ctx) {
-	assert (ctx);
-
-	int ret = S_OK;
-
-	for (size_t nline = 0; nline < ctx->instr_lines_arr.len; nline++) {
-		struct instruction_line *instr_line = NULL;
-		_CT_FAIL_NONZERO(pvector_get(&ctx->instr_lines_arr,
-			  nline, (void **)&instr_line));
-
-		struct asm_instruction asm_instr = {0};
-
-		if (lookup_asm_instruction(instr_line->n_args, 
-				instr_line->argsptrs, &asm_instr)) {
-			log_error("Invalid line #%zu", nline + 1);
-			_CT_FAIL();
-		}
-
-		asm_instr.ctx = ctx;
-
-		if (asm_instr.is_empty) {
-			continue;
-		}
-
-		asm_instr.nline = nline;
-
-		_CT_FAIL_NONZERO(pvector_push_back(&ctx->asm_instr_arr, &asm_instr));
-	}
 
 _CT_EXIT_POINT:
 	return ret;
@@ -233,9 +202,7 @@ static int assembly(struct translating_context *ctx) {
 		_CT_FAIL_NONZERO(pvector_get(&ctx->asm_instr_arr,
 			  i, (void **)&asm_instr));
 
-		if (asm_instr->is_empty) {
-			continue; // REVIEW:
-		} else if (asm_instr->is_label) {
+		if (asm_instr->is_label) {
 			_CT_CHECKED(process_label(asm_instr));
 		} else {
 			if (assemble_instruction(asm_instr)) {
@@ -259,8 +226,8 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 	size_t textbuf_len = 0;
 
 	struct translating_context ctx = {
-		.instr_lines_arr = {0},
-		.instructions_arr = {0},
+		.asm_instr_arr = {0},
+		.bin_instr_arr = {0},
 
 		.n_instruction = 0,
 
@@ -271,38 +238,34 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 
 	_CT_CHECKED(read_file(in_filename, &textbuf, &textbuf_len));
 
-	_CT_CHECKED(tokenize_instructions(&ctx.instr_lines_arr,
+	_CT_CHECKED(tokenize_instructions(&ctx,
 			textbuf, textbuf_len));
 	
 	_CT_FAIL_NONZERO(pvector_init(&ctx.labels_table,
 			  sizeof(struct label_instance)));
-	//TODO bin-INSTR
-	_CT_FAIL_NONZERO(pvector_init(&ctx.instructions_arr,
+
+	_CT_FAIL_NONZERO(pvector_init(&ctx.bin_instr_arr,
 			  sizeof(spu_instruction_t)));
-	_CT_FAIL_NONZERO(pvector_init(&ctx.asm_instr_arr,
-			       sizeof(struct asm_instruction)));
 	     
-	_CT_CHECKED(prepare_asm_instructions(&ctx));
 
 	_CT_CHECKED(assembly(&ctx));
 
 	ctx.second_compilation = 1;
-	_CT_FAIL_NONZERO(pvector_empty(&ctx.instructions_arr));
+	_CT_FAIL_NONZERO(pvector_empty(&ctx.bin_instr_arr));
 	ctx.n_instruction = 0;
 	_CT_CHECKED(assembly(&ctx));
 
-	for (size_t i = 0; i < ctx.instructions_arr.len; i++) {
+	for (size_t i = 0; i < ctx.bin_instr_arr.len; i++) {
 		spu_instruction_t *bin_instr = NULL;
 		_CT_FAIL_NONZERO(pvector_get(
-			&ctx.instructions_arr, i, (void **)&bin_instr));
+			&ctx.bin_instr_arr, i, (void **)&bin_instr));
 		fwrite(bin_instr, sizeof(*bin_instr), 1, out_stream);
 	}
 
 _CT_EXIT_POINT:
-	pvector_destroy(&ctx.instructions_arr);
+	pvector_destroy(&ctx.bin_instr_arr);
 	pvector_destroy(&ctx.labels_table);
 	pvector_destroy(&ctx.asm_instr_arr);
-	pvector_destroy(&ctx.instr_lines_arr);
 	free(textbuf);
 
 	return ret;

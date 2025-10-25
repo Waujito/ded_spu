@@ -10,14 +10,11 @@ struct label_instance {
 };
 
 struct translating_context {
-	// Input file with asm text
-	struct pvector instr_lines_arr;
-
 	// Prepared assembler instructions
 	struct pvector asm_instr_arr;
 
 	// An array with binary instructions
-	struct pvector instructions_arr;	
+	struct pvector bin_instr_arr;	
 
 	size_t n_instruction;
 

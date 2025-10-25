@@ -86,6 +86,7 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 	int ret = S_OK;
 	const struct op_cmd *op_cmd = NULL;
 	int is_directive = 0;
+	struct spu_instr_data instr_data = {0};
 
 
 	if (opcode == DIRECTIVE_OPCODE) {
@@ -99,17 +100,15 @@ int SPUExecuteInstruction(struct spu_context *ctx, struct spu_instruction instr)
 		_CT_FAIL();
 	}
 
-	{
-		struct spu_instr_data instr_data = {0};
-		_CT_CHECKED(op_cmd->layout->parse_bin_fn(&instr, &instr_data));
+	_CT_CHECKED(op_cmd->layout->parse_bin_fn(&instr, &instr_data));
+
 #ifdef DEBUG_INSTRUCTIONS
-		fprintf(stdout, "Executing <");
-		_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
-		fprintf(stdout, ">\n");
+	fprintf(stdout, "Executing <");
+	_CT_CHECKED(op_cmd->layout->write_asm_fn(&instr_data, stdout));
+	fprintf(stdout, ">\n");
 #endif
-		
-		return op_cmd->exec_fun(ctx, instr_data);
-	}
+	
+	return op_cmd->exec_fun(ctx, instr_data);
 
 _CT_EXIT_POINT:
 	return ret;

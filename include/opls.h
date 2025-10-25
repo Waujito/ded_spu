@@ -3,21 +3,9 @@
 
 #include "spu_asm.h"
 
-static const struct op_cmd *opcode_layout_search(unsigned int opcode,
+static inline const struct op_cmd *opcode_layout_search(unsigned int opcode,
 						 const struct op_layout *opl) {
-	
-	const struct op_cmd *op_cmd_ptr = op_table;
-
-	while (op_cmd_ptr->cmd_name != NULL) {
-		if (	op_cmd_ptr->opcode == opcode &&
-			op_cmd_ptr->layout == opl) {
-			return op_cmd_ptr;
-		}
-
-		op_cmd_ptr++;
-	}
-
-	return NULL;
+	return find_op_cmd_opcode(opcode, opl->is_directive); 
 }
 
 #define DEFINE_BINARY_PARSER(name, ...)						\

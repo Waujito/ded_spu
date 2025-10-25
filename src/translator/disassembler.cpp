@@ -42,7 +42,7 @@ _CT_EXIT_POINT:
 	return ret;
 }
 
-static int DisasmLoop(struct spu_context *ctx) {
+static int disasm_loop(struct spu_context *ctx) {
 	assert (ctx);
 
 	while (ctx->ip < ctx->instr_bufsize) {
@@ -66,7 +66,7 @@ static int disasm(const char *in_filename) {
 
 	_CT_CHECKED(SPULoadBinary(&ctx, in_filename)); // FIXME snake pascal
 
-	_CT_CHECKED(DisasmLoop(&ctx));
+	_CT_CHECKED(disasm_loop(&ctx));
 
 _CT_EXIT_POINT:
 	SPUDtor(&ctx);

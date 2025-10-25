@@ -16,7 +16,7 @@ sub r3 r3 r4	; b ^ 2 - 4 * a * c
 ; Tests for negative discriminant
 ldc r6 $0
 cmp r3 r6
-jmp.lt .negative_discriminant
+jmp.lt .no_solutions
 
 sqrt r3 r3	; sqrt (D)
 ldc r6 $2
@@ -32,11 +32,29 @@ add r5 r4 r3	; -b - sqrt(D)
 div r5 r5 r6	; (-b - sqrt(d)) / (s * a)
 print r5
 halt
+
 .linear_equation:
-ldc r6 $-1
+cmp r1 r6	; b == 0
+jmp.eq .linear_no_x
+ldc r6 $1	; x = -c / b
+print r6
+ldc r6 $0
+sub r6 r6 r2
+div r6 r6 r1
 print r6
 halt
-.negative_discriminant:
+
+.linear_no_x:	; if b == 0, if c == 0 x is any number, 
+	 	; if c != 0 here is no real solutions
+cmp r2 r6
+jmp.neq .no_solutions
+ldc r6 $1
+print r6
+ldc r6 $0
+print r6
+halt
+
+.no_solutions:
 ldc r6 $0
 print r6
 halt

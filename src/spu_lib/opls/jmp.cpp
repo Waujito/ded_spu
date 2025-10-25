@@ -203,7 +203,6 @@ DEFINE_ASM_PARSER(jmp, {
 	char *jmp_str = asm_instr->argsptrs[1];
 
 	_CT_CHECKED(parse_jmp_condition(asm_instr, &instr_data->jmp_condition));
-	eprintf("jmp_cond %d\n", instr_data->jmp_condition);
 	_CT_CHECKED(parse_jmp_position(asm_instr, jmp_str, &instr_data->jmp_position));
 });
 

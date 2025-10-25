@@ -77,7 +77,7 @@ int instr_get_bitfield(
 	return S_OK;
 }
 
-int instr_set_register(spu_register_num_t rn,
+int instr_set_register(spu_register_num_t reg_number,
 			struct spu_instruction *instr, 
 			size_t pos, int set_head_bit) {
 	assert (instr);
@@ -88,11 +88,11 @@ int instr_set_register(spu_register_num_t rn,
 
 	if (use_head_bit) {
 		instr->opcode.reg_extended = (
-			(rn & REGISTER_HIGHBIT_MASK) == REGISTER_HIGHBIT_MASK);
-		rn &= (uint8_t)(~REGISTER_HIGHBIT_MASK); // FIXME rename
+			(reg_number & REGISTER_HIGHBIT_MASK) == REGISTER_HIGHBIT_MASK);
+		reg_number &= (uint8_t)(~REGISTER_HIGHBIT_MASK); // FIXME rename
 	}
 
-	if (instr_set_bitfield(rn, reg_copy_len, instr, pos)) {
+	if (instr_set_bitfield(reg_number, reg_copy_len, instr, pos)) {
 		return S_FAIL;
 	}
 
@@ -100,10 +100,10 @@ int instr_set_register(spu_register_num_t rn,
 }
 
 
-int instr_get_register(spu_register_num_t *rn,
+int instr_get_register(spu_register_num_t *reg_number,
 			const struct spu_instruction *instr, 
 			size_t pos, int spec_head_bit) {
-	assert (rn);
+	assert (reg_number);
 	assert (instr);
 
 	unsigned int use_head_bit = (spec_head_bit != 0);
@@ -119,7 +119,7 @@ int instr_get_register(spu_register_num_t *rn,
 		regnum |= REGISTER_HIGHBIT_MASK;
 	}
 
-	*rn = (uint8_t)regnum;
+	*reg_number = (uint8_t)regnum;
 
 	return S_OK;
 }

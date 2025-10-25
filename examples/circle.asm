@@ -1,12 +1,17 @@
+; r3 is offset of vram in ram
 ldc r3 $10
-draw r3
-pushr r3
 
+pushr r3
 mov r0 r3
+; fill area on offset r0 with zeros
 call .fill_zeros
 
-popr r0
-pushr r0
+popr r3
+pushr r3
+draw r3
+
+mov r0 r3
+; fill area on offset r0 with circle
 call .fill_circle
 
 popr r3
@@ -14,34 +19,39 @@ popr r3
 draw r3
 halt
 
+; r0 = vram offset
+; fills screen with circle
 .fill_circle:
 scrhw r5 r6
 print r5
 print r6
 
+; r7 and r8 are counters of y and x
 ldc r7 $0
-.cycle12:
+.fill_circle_y:
 
 ldc r8 $0
-.cycle22:
+.fill_circle_x:
 
+; prepare arguments for function
+; save needed registers on stack
 pushr r5
 pushr r6
 pushr r7
 pushr r8
 pushr r0
 
-mov r0 r7
-mov r1 r8
-print r0
-print r1
-popr r2
+; prepare arguments for function
+mov r0 r7 ; counter on y
+mov r1 r8 ; counter on x
+popr r2   ; vram offset
 pushr r2
 
 pushr r0
 pushr r1
 pushr r2
 
+; move center of circle to the center of screen
 ldc r3 $2
 div r5 r5 r3
 div r6 r6 r3
@@ -50,11 +60,13 @@ sub r1 r1 r6
 
 call .circle_equation
 
+; circle_equation returns color of circle point
 mov r3 r0
 popr r2
 popr r1
 popr r0
 
+; plot the point
 call .point_on_idx
 
 popr r0
@@ -63,30 +75,32 @@ popr r7
 popr r6
 popr r5
 
+;increment counters
+
 ldc r9 $1
 add r8 r8 r9
 cmp r8 r6
-jmp.lt .cycle22
+jmp.lt .fill_circle_x
 
 add r7 r7 r9
 cmp r7 r5
-jmp.lt .cycle12
+jmp.lt .fill_circle_y
 
 ret
 
 
 ; r0 = x, r1 = y, returns color in r0
 .circle_equation:
-mul r0 r0 r0
-mul r1 r1 r1
-add r0 r1 r0
-ldc r1 $32
-cmp r0 r1
+mul r0 r0 r0	; x^2
+mul r1 r1 r1 	; y^2
+add r0 r1 r0 	; x^2 + y^2
+ldc r1 $32   	; r^2
+cmp r0 r1	; x^2 + y^2 <= r^2
 jmp.gt .circle_zero
-ldc r0 $1
+ldc r0 $1	; yes - return 1
 jmp .circle_ret
 .circle_zero:
-ldc r0 $0
+ldc r0 $0	; no - return 0
 .circle_ret:
 ret
 
@@ -111,9 +125,7 @@ pushr r0
 
 mov r0 r7
 mov r1 r8
-print r0
-print r1
-popr r2
+popr r2	; vram offset
 pushr r2
 ldc r3 $0
 call .point_on_idx

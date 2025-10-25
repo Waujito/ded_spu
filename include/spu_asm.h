@@ -8,8 +8,9 @@
  * 6-bit opcode allows up to 2^6 = 64 different instructions.
  *
  * 64 instructions are not enough, so here will be an extending opcode.
- * So, let's call instructions encoded like this "basic opcode", // FIXME rewrite
- * wide instructions with extended opcode - "directive instructions".
+ * So, let's call instructions encoded like with small opcode set
+ * "basic instructions",
+ * while wide instructions with extended opcode - "directive instructions".
  *
  * ```
  * 32                                                                    0
@@ -77,6 +78,7 @@
 #define FREGISTER_BIT_LEN	(4)
 #define REGISTER_BIT_LEN	(5)
 #define N_REGISTERS		(32)
+#define N_GENERAL_REGISTERS	(31) // 1 for RSP (reserved)
 #define REGISTER_RSP_CODE	(0x1F)
 #define REGISTER_RSP_NAME	("rsp")
 #define REGISTER_HIGHBIT_MASK	(0x10)
@@ -353,7 +355,7 @@ struct translating_context;
 
 struct asm_instruction {
 	size_t n_args;
-	char **argsptrs;
+	char *argsptrs[MAX_INSTR_ARGS];
 	const struct op_cmd *op_cmd;
 	const char *op_arg;
 
