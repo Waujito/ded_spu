@@ -10,6 +10,24 @@ OP_EXEC_FN(ldc_exec) {
 	return S_OK;
 }
 
+OP_EXEC_FN(ldp_exec) {
+	if (instr.snum < 0 || (size_t) instr.snum >= ctx->stack.len) {
+		return S_FAIL;
+	}
+	size_t stack_ptr = (size_t) instr.snum;
+	stack_ptr = ctx->stack.len - stack_ptr - 1;
+
+
+	spu_data_t *stack_data = NULL;
+	if (pvector_get(&ctx->stack, stack_ptr, (void **)&stack_data)) {
+		return S_FAIL;
+	}
+
+	ctx->registers[instr.rdest] = *stack_data;
+
+	return S_OK;
+}
+
 OP_EXEC_FN(cmp_exec) {
 	int64_t lnum = ctx->registers[instr.rdest];
 	int64_t rnum = ctx->registers[instr.rsrc1];

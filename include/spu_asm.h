@@ -139,6 +139,11 @@ enum spu_opcodes {
 #define LDC_INTEGER_BLEN (20)
 
 	/**
+	 * Loads data from nth stack frame to register. Layout like LDC.
+	 */
+	LDP_OPCODE	= 0x05,
+
+	/**
 	 * @brief Jump instruction
 	 *
 	 * 5 bits (1 from the instruction header and 4 in arguments)
@@ -408,6 +413,7 @@ struct op_cmd {
 
 OP_EXEC_FN(mov_exec);
 OP_EXEC_FN(ldc_exec);
+OP_EXEC_FN(ldp_exec);
 OP_EXEC_FN(jmp_exec);
 OP_EXEC_FN(call_exec);
 OP_EXEC_FN(ret_exec);
@@ -435,6 +441,7 @@ OP_EXEC_FN(draw_exec);
 static const struct op_cmd op_table[] = {
 	OP_CMD_ENTRY("mov",	MOV_OPCODE,	&opl_mov,		arithm_unary_exec),
 	OP_CMD_ENTRY("ldc",	LDC_OPCODE,	&opl_ldc,		ldc_exec),
+	OP_CMD_ENTRY("ldp",	LDP_OPCODE,	&opl_ldc,		ldp_exec),
 	OP_CMD_ENTRY("jmp",	JMP_OPCODE,	&opl_jmp, 		jmp_exec),
 	OP_CMD_ENTRY("call",	CALL_OPCODE,	&opl_jmp,		call_exec),
 	OP_CMD_ENTRY("ret",	RET_OPCODE,	&opl_noarg,		ret_exec),

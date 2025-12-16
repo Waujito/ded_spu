@@ -247,7 +247,6 @@ static int parse_text(const char *in_filename, FILE *out_stream) {
 	_CT_FAIL_NONZERO(pvector_init(&ctx.bin_instr_arr,
 			  sizeof(spu_instruction_t)));
 	     
-
 	_CT_CHECKED(assembly(&ctx));
 
 	ctx.second_compilation = 1;

@@ -5,8 +5,8 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 
-#define SPU
 #include "spu_asm.h"
 
 #include "spu.h"
